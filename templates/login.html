@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - College Management System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="card-title mb-0">Login</h4>
+            </div>
+            <div class="card-body">
+                <!-- Login Type Tabs -->
+                <ul class="nav nav-tabs mb-4" id="loginTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="student-tab" data-bs-toggle="tab" data-bs-target="#student-login" type="button" role="tab" aria-controls="student-login" aria-selected="true">
+                            <i class="fas fa-user-graduate me-2"></i>Student Login
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="faculty-tab" data-bs-toggle="tab" data-bs-target="#faculty-login" type="button" role="tab" aria-controls="faculty-login" aria-selected="false">
+                            <i class="fas fa-chalkboard-teacher me-2"></i>Faculty Login
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="loginTabsContent">
+                    <!-- Student Login Form -->
+                    <div class="tab-pane fade show active" id="student-login" role="tabpanel" aria-labelledby="student-tab">
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_type" value="student">
+                            <div class="mb-3">
+                                <label for="student-email" class="form-label">Student Email</label>
+                                <input type="email" class="form-control" id="student-email" name="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="student-password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="student-password" name="password" required>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Login as Student
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Faculty Login Form -->
+                    <div class="tab-pane fade" id="faculty-login" role="tabpanel" aria-labelledby="faculty-tab">
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_type" value="faculty">
+                            <div class="mb-3">
+                                <label for="faculty-email" class="form-label">Faculty Email</label>
+                                <input type="email" class="form-control" id="faculty-email" name="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="faculty-password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="faculty-password" name="password" required>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Login as Faculty
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                {% if messages %}
+                <div class="mt-3">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer text-center">
+                <p class="mb-0">Don't have an account? <a href="{% url 'attendance:register' %}">Register here</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize Bootstrap tabs
+    document.addEventListener('DOMContentLoaded', function() {
+        var triggerTabList = [].slice.call(document.querySelectorAll('#loginTabs button'))
+        triggerTabList.forEach(function(triggerEl) {
+            var tabTrigger = new bootstrap.Tab(triggerEl)
+            triggerEl.addEventListener('click', function(event) {
+                event.preventDefault()
+                tabTrigger.show()
+            })
+        })
+    });
+</script>
+{% endblock %} 

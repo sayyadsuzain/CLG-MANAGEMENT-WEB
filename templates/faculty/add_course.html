@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Add New Course - College Management System{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'attendance:faculty_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Add Course</li>
+                </ol>
+            </nav>
+            <h2>Add New Course</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Course Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'attendance:add_course' %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="course_code" class="form-label">Course Code*</label>
+                            <input type="text" class="form-control" id="course_code" name="course_code" required>
+                            <div class="form-text">Enter a unique course code (e.g., CS101)</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="course_name" class="form-label">Course Name*</label>
+                            <input type="text" class="form-control" id="course_name" name="course_name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4"></textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'attendance:faculty_dashboard' %}" class="btn btn-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create Course</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">Course code should be unique and follow your institution's format</li>
+                        <li class="list-group-item">Provide a clear and descriptive course name</li>
+                        <li class="list-group-item">Add detailed description to help students understand the course content</li>
+                        <li class="list-group-item">You can add students to the course after creation</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

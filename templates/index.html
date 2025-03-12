@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome - College Management System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <h1 class="display-4 mb-4">Welcome to College Management System</h1>
+        <p class="lead mb-4">A comprehensive solution for managing college attendance and academic records.</p>
+        
+        {% if not user.is_authenticated %}
+            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
+                <a href="{% url 'attendance:login' %}" class="btn btn-primary btn-lg px-4 gap-3">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </a>
+                <a href="{% url 'attendance:register' %}" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="fas fa-user-plus me-2"></i>Register
+                </a>
+            </div>
+        {% else %}
+            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
+                {% if user.user_type == 'student' %}
+                    <a href="{% url 'attendance:student_dashboard' %}" class="btn btn-primary btn-lg px-4">
+                        <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+                    </a>
+                {% elif user.user_type == 'faculty' %}
+                    <a href="{% url 'attendance:faculty_dashboard' %}" class="btn btn-primary btn-lg px-4">
+                        <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-user-graduate fa-3x text-primary mb-3"></i>
+                <h3>Students</h3>
+                <p>View your attendance records, course details, and academic progress.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-chalkboard-teacher fa-3x text-primary mb-3"></i>
+                <h3>Faculty</h3>
+                <p>Manage attendance, create sessions, and track student participation.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-bar fa-3x text-primary mb-3"></i>
+                <h3>Analytics</h3>
+                <p>Get insights into attendance patterns and course statistics.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

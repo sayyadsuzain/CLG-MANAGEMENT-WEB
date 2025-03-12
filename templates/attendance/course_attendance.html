@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>{{ course.code }} - {{ course.name }}</h4>
+                    <p class="text-muted mb-0">Date: {{ today|date:"d M Y" }}</p>
+                </div>
+                <div class="card-body">
+                    {% if session.is_active %}
+                        <form id="attendanceForm">
+                            {% csrf_token %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Roll Number</th>
+                                            <th>Student Name</th>
+                                            <th>Status</th>
+                                            <th>Remarks</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for student in students %}
+                                        <tr>
+                                            <td>{{ student.roll_number }}</td>
+                                            <td>{{ student.user.get_full_name }}</td>
+                                            <td>
+                                                <select class="form-select status-select" data-student-id="{{ student.id }}">
+                                                    <option value="PRESENT" {% if attendance_records.student.id == 'PRESENT' %}selected{% endif %}>Present</option>
+                                                    <option value="ABSENT" {% if attendance_records.student.id == 'ABSENT' %}selected{% endif %}>Absent</option>
+                                                    <option value="LATE" {% if attendance_records.student.id == 'LATE' %}selected{% endif %}>Late</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control remarks-input" data-student-id="{{ student.id }}" placeholder="Optional remarks">
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-primary btn-sm mark-attendance" data-student-id="{{ student.id }}">
+                                                    Mark
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            Attendance session is closed for today.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    document.querySelectorAll('.mark-attendance').forEach(button => {
+        button.addEventListener('click', function() {
+            const studentId = this.dataset.studentId;
+            const statusSelect = document.querySelector(`.status-select[data-student-id="${studentId}"]`);
+            const remarksInput = document.querySelector(`.remarks-input[data-student-id="${studentId}"]`);
+            
+            const data = new FormData();
+            data.append('student_id', studentId);
+            data.append('status', statusSelect.value);
+            data.append('remarks', remarksInput.value);
+            
+            fetch(`/faculty/mark-attendance/{{ course.id }}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                },
+                body: data
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    alert(data.message);
+                    // Disable the button temporarily
+                    button.disabled = true;
+                    setTimeout(() => button.disabled = false, 2000);
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to mark attendance. Please try again.');
+            });
+        });
+    });
+});
+</script>
+{% endblock %} 

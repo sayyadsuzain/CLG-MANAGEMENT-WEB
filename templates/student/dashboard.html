@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Dashboard - College Management System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2>Welcome, {{ user.get_full_name }}</h2>
+        <p class="text-muted">Student ID: {{ user.student.student_id }} | Department: {{ user.student.department }}</p>
+    </div>
+</div>
+
+<!-- Notices Section -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-bullhorn me-2"></i>Important Notices</h5>
+            </div>
+            <div class="card-body">
+                {% if notices %}
+                    <div class="list-group">
+                        {% for notice in notices %}
+                            <div class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ notice.title }}
+                                        {% if notice.priority == 'high' %}
+                                            <span class="badge bg-danger">High Priority</span>
+                                        {% elif notice.priority == 'medium' %}
+                                            <span class="badge bg-warning">Medium Priority</span>
+                                        {% endif %}
+                                    </h6>
+                                    <small>{{ notice.publish_date|date:"M d, Y" }}</small>
+                                </div>
+                                <p class="mb-1">{{ notice.content }}</p>
+                                <small class="text-muted">
+                                    Posted by {{ notice.created_by.get_full_name }}
+                                    {% if notice.course %}
+                                        for {{ notice.course.name }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-center mb-0">No notices at this time.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Courses and Attendance Section -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>My Courses</h5>
+                <a href="{% url 'attendance:view_attendance' %}" class="btn btn-light btn-sm">
+                    <i class="fas fa-calendar-alt me-1"></i>View Full Attendance
+                </a>
+            </div>
+            <div class="card-body">
+                {% if attendance_data %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Course Code</th>
+                                    <th>Course Name</th>
+                                    <th>Attendance</th>
+                                    <th>Assignments</th>
+                                    <th>Grade</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for data in attendance_data %}
+                                    <tr>
+                                        <td>{{ data.course.course_code }}</td>
+                                        <td>{{ data.course.name }}</td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar {% if data.attendance_percentage >= 75 %}bg-success{% elif data.attendance_percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %}"
+                                                     role="progressbar"
+                                                     style="width: {{ data.attendance_percentage }}%"
+                                                     aria-valuenow="{{ data.attendance_percentage }}"
+                                                     aria-valuemin="0"
+                                                     aria-valuemax="100">
+                                                    {{ data.attendance_percentage }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if data.pending_assignments > 0 %}
+                                                <span class="badge bg-warning">{{ data.pending_assignments }} Pending</span>
+                                            {% else %}
+                                                <span class="badge bg-success">All Submitted</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if data.latest_grade %}
+                                                <span class="badge {% if data.latest_grade == 'F' %}bg-danger{% else %}bg-success{% endif %}">
+                                                    {{ data.latest_grade }}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Not Graded</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a href="{% url 'attendance:view_attendance' %}?course={{ data.course.id }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-calendar-check me-1"></i>Attendance
+                                                </a>
+                                                <a href="{% url 'attendance:view_assignments' course_id=data.course.id %}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-tasks me-1"></i>Assignments
+                                                </a>
+                                                <a href="{% url 'attendance:view_grades' course_id=data.course.id %}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-chart-line me-1"></i>Grades
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-book-reader fa-3x text-muted mb-3"></i>
+                        <p class="lead">You are not enrolled in any courses yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats Section -->
+<div class="row">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-check fa-3x mb-3"></i>
+                <h4>Overall Attendance</h4>
+                {% if overall_attendance %}
+                    <h2>{{ overall_attendance|floatformat:1 }}%</h2>
+                {% else %}
+                    <h2>N/A</h2>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-tasks fa-3x mb-3"></i>
+                <h4>Assignments</h4>
+                <h2>{{ total_pending_assignments }} Pending</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-3x mb-3"></i>
+                <h4>Average Grade</h4>
+                {% if average_grade %}
+                    <h2>{{ average_grade }}</h2>
+                {% else %}
+                    <h2>N/A</h2>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Enable tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+</script>
+{% endblock %} 

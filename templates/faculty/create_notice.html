@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Notice - College Management System{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'attendance:faculty_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Create Notice</li>
+                </ol>
+            </nav>
+            <h2>Create New Notice</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Notice Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'attendance:create_notice' %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title*</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Content*</label>
+                            <textarea class="form-control" id="content" name="content" rows="6" required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="target_courses" class="form-label">Target Courses</label>
+                            <select class="form-select" id="target_courses" name="target_courses" multiple>
+                                <option value="">All Courses</option>
+                                {% for course in courses %}
+                                <option value="{{ course.id }}">{{ course.course_code }} - {{ course.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Leave empty to send to all courses, or select specific courses</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="important" name="important">
+                                <label class="form-check-label" for="important">
+                                    Mark as Important
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'attendance:faculty_dashboard' %}" class="btn btn-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Publish Notice</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">Use a clear and descriptive title</li>
+                        <li class="list-group-item">Include all relevant details in the content</li>
+                        <li class="list-group-item">Mark as important only for urgent notices</li>
+                        <li class="list-group-item">Students will receive notifications for new notices</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Recent Notices</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_notices %}
+                        <div class="list-group">
+                            {% for notice in recent_notices %}
+                                <a href="#" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ notice.title }}</h6>
+                                        <small>{{ notice.created_at|date:"d M" }}</small>
+                                    </div>
+                                    <small class="text-muted">By: {{ notice.created_by.get_full_name }}</small>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">No recent notices</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

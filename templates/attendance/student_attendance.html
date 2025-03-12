@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        {% for course in courses %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ course.code }} - {{ course.name }}</h5>
+                </div>
+                <div class="card-body">
+                    {% with course_data=attendance_data|get_item:course.id %}
+                    <div class="attendance-stats mb-3">
+                        <div class="row">
+                            <div class="col-6">
+                                <p class="mb-1">Total Classes</p>
+                                <h4>{{ course_data.total_classes }}</h4>
+                            </div>
+                            <div class="col-6">
+                                <p class="mb-1">Classes Attended</p>
+                                <h4>{{ course_data.attended_classes }}</h4>
+                            </div>
+                        </div>
+                        <div class="progress mt-2" style="height: 20px;">
+                            <div class="progress-bar {% if course_data.percentage >= 75 %}bg-success{% else %}bg-warning{% endif %}"
+                                role="progressbar"
+                                style="width: {{ course_data.percentage }}%"
+                                aria-valuenow="{{ course_data.percentage }}"
+                                aria-valuemin="0"
+                                aria-valuemax="100">
+                                {{ course_data.percentage }}%
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6>Recent Attendance</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Marked By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in course_data.recent_records %}
+                                <tr>
+                                    <td>{{ record.date|date:"d M Y" }}</td>
+                                    <td>
+                                        <span class="badge {% if record.status == 'PRESENT' %}bg-success{% elif record.status == 'ABSENT' %}bg-danger{% else %}bg-warning{% endif %}">
+                                            {{ record.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ record.marked_by.user.get_full_name }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center">No attendance records found</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                You are not enrolled in any active courses.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Refresh attendance data every 5 minutes
+    setInterval(function() {
+        location.reload();
+    }, 300000);
+});
+</script>
+{% endblock %} 

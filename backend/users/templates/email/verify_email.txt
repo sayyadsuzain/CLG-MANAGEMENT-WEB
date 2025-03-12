@@ -1,0 +1,14 @@
+Welcome to College Management System!
+
+Hello {{ user.first_name }},
+
+Thank you for registering with us. Please verify your email address by clicking the link below:
+
+{{ verification_url }}
+
+This verification link will expire in 7 days.
+
+If you didn't create an account with us, please ignore this email.
+
+Best regards,
+College Management System Team 

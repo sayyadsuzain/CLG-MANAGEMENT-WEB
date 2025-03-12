@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - College Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="dashboard-wrapper">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg fixed-top navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Student Portal</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#courses">My Courses</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#attendance">Attendance</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#assignments">Assignments</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#grades">Grades</a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <span class="navbar-text me-3 text-white" id="studentName"></span>
+                    <button class="btn btn-outline-light" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-5 pt-3">
+        <div class="row">
+            <!-- Stats Cards -->
+            <div class="col-md-3 mb-4">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Overall Attendance</h5>
+                        <h2 class="mb-0" id="attendancePercentage">0%</h2>
+                        <small class="text-white-50">Last Updated Today</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">CGPA</h5>
+                        <h2 class="mb-0" id="cgpaValue">0.00</h2>
+                        <small class="text-white-50">Current Semester</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Courses</h5>
+                        <h2 class="mb-0" id="coursesCount">0</h2>
+                        <small class="text-white-50">Enrolled</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Pending Tasks</h5>
+                        <h2 class="mb-0" id="pendingTasks">0</h2>
+                        <small class="text-white-50">Due This Week</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Details -->
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Attendance Details</h5>
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshAttendance()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table" id="attendanceDetails">
+                                <thead>
+                                    <tr>
+                                        <th>Course Code</th>
+                                        <th>Course Name</th>
+                                        <th>Classes Attended</th>
+                                        <th>Attendance</th>
+                                        <th>Last Updated</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Attendance details will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Course Overview -->
+            <div class="col-md-8 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Course Overview</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table" id="coursesTable">
+                                <thead>
+                                    <tr>
+                                        <th>Course Code</th>
+                                        <th>Course Name</th>
+                                        <th>Instructor</th>
+                                        <th>Progress</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Courses will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Recent Activities</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group" id="activitiesList">
+                            <!-- Activities will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upcoming Deadlines -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Upcoming Deadlines</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group" id="deadlinesList">
+                            <!-- Deadlines will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notice Board -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Notice Board</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group" id="noticesList">
+                            <!-- Notices will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Modal -->
+    <div class="modal fade" id="alertModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="alertModalTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="alertModalBody">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/student-dashboard.js"></script>
+    <script>
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const accessToken = localStorage.getItem('accessToken');
+            const userType = localStorage.getItem('userType');
+            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+
+            // Redirect if not logged in or not a student
+            if (!accessToken || userType !== 'student') {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            // Display student name
+            const studentName = document.getElementById('studentName');
+            if (studentName && userData.full_name) {
+                studentName.textContent = `Welcome, ${userData.full_name}`;
+            }
+
+            // Load dashboard content
+            loadDashboardContent();
+        });
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userType');
+            localStorage.removeItem('userData');
+            window.location.href = '../login.html';
+        }
+
+        // Load dashboard content
+        function loadDashboardContent() {
+            const dashboardContent = document.getElementById('dashboardContent');
+            // Add your dashboard content loading logic here
+        }
+
+        // Add refresh attendance function
+        function refreshAttendance() {
+            loadAttendanceData().then(() => {
+                showAlert('Success', 'Attendance data refreshed successfully');
+            }).catch(error => {
+                console.error('Error refreshing attendance:', error);
+                showAlert('Error', 'Failed to refresh attendance data');
+            });
+        }
+    </script>
+</body>
+</html> 

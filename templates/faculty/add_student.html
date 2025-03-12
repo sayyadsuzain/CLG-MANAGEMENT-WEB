@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Add New Student - College Management System{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'attendance:faculty_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Add Student</li>
+                </ol>
+            </nav>
+            <h2>Add New Student</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Student Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'attendance:add_student' %}">
+                        {% csrf_token %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="first_name" class="form-label">First Name*</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="last_name" class="form-label">Last Name*</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address*</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="form-text">This will be used as the login username</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="student_id" class="form-label">Student ID*</label>
+                            <input type="text" class="form-control" id="student_id" name="student_id" required>
+                            <div class="form-text">Enter a unique student ID (e.g., STU1001)</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="course_id" class="form-label">Assign to Course</label>
+                            <select class="form-select" id="course_id" name="course_id">
+                                <option value="">-- Select Course --</option>
+                                {% for course in courses %}
+                                <option value="{{ course.id }}">{{ course.course_code }} - {{ course.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">You can assign the student to a course now or later</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'attendance:faculty_dashboard' %}" class="btn btn-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Add Student</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Important Notes</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">Student ID will be used as the initial password</li>
+                        <li class="list-group-item">Email address must be unique</li>
+                        <li class="list-group-item">Students can be assigned to multiple courses later</li>
+                        <li class="list-group-item">Students will receive an email notification upon registration</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
