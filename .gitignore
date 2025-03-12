@@ -7,6 +7,7 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 media
+staticfiles/
 
 # Python # 
 *.py[cod] 
@@ -91,4 +92,14 @@ Package Control.ca-certs/
 Package Control.merged-ca-bundle
 Package Control.user-ca-bundle
 oscrypto-ca-bundle.crt
-bh_unicode_properties.cache 
+bh_unicode_properties.cache
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db 
