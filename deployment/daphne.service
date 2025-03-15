@@ -1,0 +1,14 @@
+[Unit]
+Description=Daphne Service for CMS
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/cms
+Environment=DJANGO_SETTINGS_MODULE=college_management.settings
+ExecStart=/var/www/cms/venv/bin/daphne -e ssl:8443:privateKey=/var/www/cms/ssl/private.key:certKey=/var/www/cms/ssl/certificate.crt college_management.asgi:application
+Restart=always
+
+[Install]
+WantedBy=multi-user.target 

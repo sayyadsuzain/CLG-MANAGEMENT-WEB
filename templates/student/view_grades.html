@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.name }} - Grades{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'attendance:student_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'attendance:view_courses' %}">My Courses</a></li>
+            <li class="breadcrumb-item active">{{ course.name }} Grades</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Assignment Grades</h5>
+                </div>
+                <div class="card-body">
+                    {% if submissions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Assignment</th>
+                                        <th>Submitted On</th>
+                                        <th>Marks</th>
+                                        <th>Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for submission in submissions %}
+                                        <tr>
+                                            <td>{{ submission.assignment.title }}</td>
+                                            <td>{{ submission.submitted_at|date:"M d, Y h:i A" }}</td>
+                                            <td>
+                                                {% if submission.marks %}
+                                                    <span class="badge bg-success">
+                                                        {{ submission.marks }}/{{ submission.assignment.max_marks }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">Pending</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ submission.remarks|default:"-" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>No assignment submissions found.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

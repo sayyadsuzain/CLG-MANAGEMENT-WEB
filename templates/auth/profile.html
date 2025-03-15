@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - {{ user.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Profile</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="text-center mb-4">
+                            {% if profile_picture_url %}
+                                <img src="{{ profile_picture_url }}" alt="Profile Picture" class="rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">
+                            {% else %}
+                                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto" style="width: 150px; height: 150px;">
+                                    <i class="fas fa-user fa-4x text-white"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="profile_picture" class="form-label">Profile Picture</label>
+                            <input type="file" class="form-control" id="profile_picture" name="profile_picture" accept="image/*">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="first_name" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="last_name" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" value="{{ user.email }}" readonly>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="phone_number" class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" id="phone_number" name="phone_number" value="{{ user.phone_number|default:'' }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="user_type" class="form-label">User Type</label>
+                            <input type="text" class="form-control" id="user_type" value="{{ user.get_user_type_display }}" readonly>
+                        </div>
+                        
+                        {% if user.user_type == 'student' %}
+                        <div class="mb-3">
+                            <label for="student_id" class="form-label">Student ID</label>
+                            <input type="text" class="form-control" id="student_id" value="{{ user.student.student_id }}" readonly>
+                        </div>
+                        {% elif user.user_type == 'faculty' %}
+                        <div class="mb-3">
+                            <label for="faculty_id" class="form-label">Faculty ID</label>
+                            <input type="text" class="form-control" id="faculty_id" value="{{ user.faculty.faculty_id }}" readonly>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="text-end">
+                            {% if user.user_type == 'student' %}
+                            <a href="{% url 'attendance:student_dashboard' %}" class="btn btn-info me-2">
+                                <i class="fas fa-tachometer-alt"></i> Go to Dashboard
+                            </a>
+                            {% elif user.user_type == 'faculty' %}
+                            <a href="{% url 'attendance:faculty_dashboard' %}" class="btn btn-info me-2">
+                                <i class="fas fa-tachometer-alt"></i> Go to Dashboard
+                            </a>
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary">Update Profile</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,219 +1,107 @@
 {% extends 'base.html' %}
 
-{% block title %}Manage Grades - College Management System{% endblock %}
+{% block title %}Manage Grades{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'attendance:faculty_dashboard' %}">Dashboard</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Manage Grades</li>
-                </ol>
-            </nav>
-            <h2>Manage Student Grades</h2>
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Manage Student Grades</h4>
         </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Select Course and Student</h5>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="course_id" class="form-label">Select Course</label>
+                    <select class="form-select" id="course_id" name="course_id" required>
+                        <option value="">Choose a course...</option>
+                        {% for course in courses %}
+                        <option value="{{ course.id }}">{{ course.course_code }} - {{ course.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-                <div class="card-body">
-                    <form id="gradeSelectionForm">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="course_id" class="form-label">Course*</label>
-                                <select class="form-select" id="course_id" required>
-                                    <option value="">-- Select Course --</option>
-                                    {% for course in courses %}
-                                    <option value="{{ course.id }}">{{ course.course_code }} - {{ course.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-5 mb-3">
-                                <label for="student_id" class="form-label">Student*</label>
-                                <select class="form-select" id="student_id" required disabled>
-                                    <option value="">-- Select Student --</option>
-                                </select>
-                            </div>
-                            <div class="col-md-1 mb-3 d-flex align-items-end">
-                                <button type="button" id="loadGradeFormBtn" class="btn btn-primary" disabled>Load</button>
-                            </div>
-                        </div>
-                    </form>
+                
+                <div class="mb-3">
+                    <label for="student_id" class="form-label">Select Student</label>
+                    <select class="form-select" id="student_id" name="student_id" required disabled>
+                        <option value="">First select a course...</option>
+                    </select>
                 </div>
-            </div>
-
-            <div id="gradeFormContainer" style="display: none;">
-                <div class="card">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">Add/Update Grade</h5>
-                    </div>
-                    <div class="card-body">
-                        <form id="gradeForm" method="post" action="{% url 'attendance:manage_grades' %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="course_id" id="form_course_id">
-                            <input type="hidden" name="student_id" id="form_student_id">
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="grade_type" class="form-label">Grade Type*</label>
-                                    <select class="form-select" id="grade_type" name="grade_type" required>
-                                        <option value="">-- Select Type --</option>
-                                        <option value="midterm">Midterm Exam</option>
-                                        <option value="final">Final Exam</option>
-                                        <option value="assignment">Assignment</option>
-                                        <option value="project">Project</option>
-                                        <option value="quiz">Quiz</option>
-                                        <option value="lab">Lab Work</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="score" class="form-label">Score/Grade*</label>
-                                    <input type="text" class="form-control" id="score" name="score" required>
-                                    <div class="form-text">Enter a letter grade (e.g., A, B+) or numerical score (e.g., 85)</div>
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="remarks" class="form-label">Remarks</label>
-                                <textarea class="form-control" id="remarks" name="remarks" rows="3"></textarea>
-                                <div class="form-text">Optional feedback or comments about the student's performance</div>
-                            </div>
-                            
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                <button type="button" class="btn btn-secondary me-md-2" id="cancelGradeBtn">Cancel</button>
-                                <button type="submit" class="btn btn-success">Save Grade</button>
-                            </div>
-                        </form>
-                    </div>
+                
+                <div class="mb-3">
+                    <label for="grade" class="form-label">Grade</label>
+                    <select class="form-select" id="grade" name="grade" required>
+                        <option value="">Choose a grade...</option>
+                        {% for grade_value, grade_label in grade_choices %}
+                        <option value="{{ grade_value }}">{{ grade_label }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="row mt-4" id="gradeHistoryContainer" style="display: none;">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">Grade History</h5>
+                
+                <div class="mb-3">
+                    <label for="percentage" class="form-label">Percentage</label>
+                    <input type="number" class="form-control" id="percentage" name="percentage" 
+                           min="0" max="100" step="0.01" required>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover" id="gradeHistoryTable">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th>Score/Grade</th>
-                                    <th>Remarks</th>
-                                </tr>
-                            </thead>
-                            <tbody id="gradeHistoryList">
-                                <!-- Grade history will be loaded here -->
-                            </tbody>
-                        </table>
-                    </div>
+                
+                <div class="mb-3">
+                    <label for="remarks" class="form-label">Remarks</label>
+                    <textarea class="form-control" id="remarks" name="remarks" rows="3"></textarea>
                 </div>
-            </div>
+                
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Grade
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+{% endblock %}
 
 {% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const courseSelect = document.getElementById('course_id');
-        const studentSelect = document.getElementById('student_id');
-        const loadGradeFormBtn = document.getElementById('loadGradeFormBtn');
-        const cancelGradeBtn = document.getElementById('cancelGradeBtn');
-        
-        // When course is selected, load students
-        courseSelect.addEventListener('change', function() {
-            const courseId = this.value;
-            
-            if (!courseId) {
-                studentSelect.innerHTML = '<option value="">-- Select Student --</option>';
-                studentSelect.disabled = true;
-                loadGradeFormBtn.disabled = true;
-                return;
-            }
-            
-            // Fetch students for the selected course
-            fetch(`{% url 'attendance:get_course_students' 0 %}`.replace('0', courseId))
-                .then(response => response.json())
-                .then(data => {
-                    studentSelect.innerHTML = '<option value="">-- Select Student --</option>';
-                    
-                    data.students.forEach(student => {
-                        const option = document.createElement('option');
-                        option.value = student.id;
-                        option.textContent = `${student.name} (${student.student_id})`;
-                        studentSelect.appendChild(option);
-                    });
-                    
-                    studentSelect.disabled = false;
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while loading students');
-                });
-        });
-        
-        // When student is selected, enable the load button
-        studentSelect.addEventListener('change', function() {
-            loadGradeFormBtn.disabled = !this.value;
-        });
-        
-        // Load grade form
-        loadGradeFormBtn.addEventListener('click', function() {
-            const courseId = courseSelect.value;
-            const studentId = studentSelect.value;
-            
-            if (!courseId || !studentId) {
-                alert('Please select both course and student');
-                return;
-            }
-            
-            // Set form values
-            document.getElementById('form_course_id').value = courseId;
-            document.getElementById('form_student_id').value = studentId;
-            
-            // Show grade form
-            document.getElementById('gradeFormContainer').style.display = 'block';
-            
-            // Load grade history
-            loadGradeHistory(courseId, studentId);
-        });
-        
-        // Cancel button
-        cancelGradeBtn.addEventListener('click', function() {
-            document.getElementById('gradeFormContainer').style.display = 'none';
-            document.getElementById('gradeHistoryContainer').style.display = 'none';
-        });
-        
-        // Load grade history
-        function loadGradeHistory(courseId, studentId) {
-            // This would typically be an AJAX call to get grade history
-            // For now, we'll just show a placeholder
-            const gradeHistoryList = document.getElementById('gradeHistoryList');
-            gradeHistoryList.innerHTML = '<tr><td colspan="4" class="text-center">Loading grade history...</td></tr>';
-            
-            // Show grade history container
-            document.getElementById('gradeHistoryContainer').style.display = 'block';
-            
-            // Simulate loading grade history (replace with actual API call)
-            setTimeout(() => {
-                gradeHistoryList.innerHTML = '<tr><td colspan="4" class="text-center">No previous grades found for this student in this course.</td></tr>';
-            }, 1000);
+document.getElementById('course_id').addEventListener('change', function() {
+    const courseId = this.value;
+    const studentSelect = document.getElementById('student_id');
+    
+    if (!courseId) {
+        studentSelect.innerHTML = '<option value="">First select a course...</option>';
+        studentSelect.disabled = true;
+        return;
+    }
+    
+    // Fetch students for the selected course
+    fetch(`/faculty/get-course-students/${courseId}/`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.students) {
+            studentSelect.innerHTML = '<option value="">Select a student...</option>';
+            data.students.forEach(student => {
+                studentSelect.innerHTML += `
+                    <option value="${student.id}">${student.name} (${student.student_id})</option>
+                `;
+            });
+            studentSelect.disabled = false;
+        } else {
+            studentSelect.innerHTML = '<option value="">No students found</option>';
+            studentSelect.disabled = true;
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        studentSelect.innerHTML = '<option value="">Error loading students</option>';
+        studentSelect.disabled = true;
     });
+});
+
+// Validate percentage input
+document.getElementById('percentage').addEventListener('input', function() {
+    let value = parseFloat(this.value);
+    if (value < 0) this.value = 0;
+    if (value > 100) this.value = 100;
+});
 </script>
-{% endblock %}
 {% endblock %}
  

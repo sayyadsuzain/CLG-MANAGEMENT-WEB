@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load attendance_extras %}
+
+{% block title %}{{ student.user.get_full_name }}'s Attendance{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'attendance:faculty_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'attendance:view_all_students' %}">All Students</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'attendance:student_details' student.id %}">{{ student.user.get_full_name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Attendance</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2>{{ student.user.get_full_name }} ({{ student.student_id }})</h2>
+        </div>
+    </div>
+
+    {% for course in courses %}
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">{{ course.name }} ({{ course.course_code }})</h5>
+            <div>
+                <span class="badge {% if course_stats|get_item:course.id|get_item:'percentage' >= 75 %}bg-success{% else %}bg-danger{% endif %}">
+                    {{ course_stats|get_item:course.id|get_item:'percentage' }}% Attendance
+                </span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h6>Total Sessions</h6>
+                            <h4>{{ course_stats|get_item:course.id|get_item:'total' }}</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h6>Present</h6>
+                            <h4>{{ course_stats|get_item:course.id|get_item:'present' }}</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body text-center">
+                            <h6>Absent</h6>
+                            <h4>{{ course_stats|get_item:course.id|get_item:'absent' }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                            <th>Marked By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in attendance_records %}
+                        {% if record.session.course.id == course.id %}
+                        <tr>
+                            <td>{{ record.session.date|date:"M d, Y" }}</td>
+                            <td>{{ record.session.start_time|time:"H:i" }} - {{ record.session.end_time|time:"H:i" }}</td>
+                            <td>
+                                {% if record.status %}
+                                <span class="badge bg-success">Present</span>
+                                {% else %}
+                                <span class="badge bg-danger">Absent</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ record.marked_by.user.get_full_name }}</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="text-end">
+        <button onclick="window.print()" class="btn btn-secondary">
+            <i class="fas fa-print"></i> Print Report
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add any additional JavaScript if needed
+</script>
+{% endblock %} 

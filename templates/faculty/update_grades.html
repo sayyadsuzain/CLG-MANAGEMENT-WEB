@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Update Grades - {{ course.name }} - College Management System{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'attendance:faculty_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'attendance:view_course_students' course.id %}">{{ course.course_code }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Update Grades</li>
+                </ol>
+            </nav>
+            <h2>Update Grades - {{ course.name }}</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Student Grades</h5>
+                </div>
+                <div class="card-body">
+                    {% if students %}
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Student ID</th>
+                                        <th>Name</th>
+                                        <th>Grade</th>
+                                        <th>Percentage</th>
+                                        <th>Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for student in students %}
+                                    <tr>
+                                        <td>{{ student.student_id }}</td>
+                                        <td>{{ student.user.get_full_name }}</td>
+                                        <td>
+                                            <select name="grade_{{ student.id }}" class="form-select">
+                                                <option value="">Select Grade</option>
+                                                <option value="A+" {% if grades|get_item:student.id == 'A+' %}selected{% endif %}>A+</option>
+                                                <option value="A" {% if grades|get_item:student.id == 'A' %}selected{% endif %}>A</option>
+                                                <option value="B+" {% if grades|get_item:student.id == 'B+' %}selected{% endif %}>B+</option>
+                                                <option value="B" {% if grades|get_item:student.id == 'B' %}selected{% endif %}>B</option>
+                                                <option value="C+" {% if grades|get_item:student.id == 'C+' %}selected{% endif %}>C+</option>
+                                                <option value="C" {% if grades|get_item:student.id == 'C' %}selected{% endif %}>C</option>
+                                                <option value="D" {% if grades|get_item:student.id == 'D' %}selected{% endif %}>D</option>
+                                                <option value="F" {% if grades|get_item:student.id == 'F' %}selected{% endif %}>F</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="number" name="percentage_{{ student.id }}" 
+                                                class="form-control" min="0" max="100" step="0.01"
+                                                value="{{ percentages|get_item:student.id|default:'' }}">
+                                        </td>
+                                        <td>
+                                            <input type="text" name="remarks_{{ student.id }}" 
+                                                class="form-control"
+                                                value="{{ remarks|get_item:student.id|default:'' }}">
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">
+                            <button type="submit" class="btn btn-primary">Save Grades</button>
+                            <a href="{% url 'attendance:view_course_students' course.id %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>No students enrolled in this course.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Grading Guidelines</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Grade Scale:</h6>
+                    <ul class="list-unstyled">
+                        <li>A+ : 90-100%</li>
+                        <li>A  : 80-89%</li>
+                        <li>B+ : 75-79%</li>
+                        <li>B  : 70-74%</li>
+                        <li>C+ : 65-69%</li>
+                        <li>C  : 60-64%</li>
+                        <li>D  : 50-59%</li>
+                        <li>F  : Below 50%</li>
+                    </ul>
+                    <hr>
+                    <h6>Notes:</h6>
+                    <ul>
+                        <li>Enter percentage as a number between 0 and 100</li>
+                        <li>Remarks are optional but recommended for grades below C</li>
+                        <li>All changes are saved immediately</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

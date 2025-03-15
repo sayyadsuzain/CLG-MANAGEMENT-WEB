@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pending Tasks - Faculty Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Breadcrumb and Title -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'attendance:faculty_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Pending Tasks</li>
+                </ol>
+            </nav>
+            <h2>Pending Tasks</h2>
+        </div>
+        <a href="{% url 'attendance:faculty_dashboard' %}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Ungraded Assignments -->
+    <div class="card mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="fas fa-tasks text-warning me-2"></i>Ungraded Assignments
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Assignment</th>
+                            <th>Course</th>
+                            <th>Due Date</th>
+                            <th>Submissions</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment in ungraded_assignments %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong>{{ assignment.title }}</strong>
+                                    <div class="text-muted small">{{ assignment.description|truncatechars:50 }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div>{{ assignment.course.course_code }}</div>
+                                <small class="text-muted">{{ assignment.course.name }}</small>
+                            </td>
+                            <td>
+                                <div>{{ assignment.due_date|date:"d M Y" }}</div>
+                                <small class="text-muted">{{ assignment.due_date|time:"g:i A" }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-warning">{{ assignment.ungraded_count }} ungraded</span>
+                                <span class="text-muted">/</span>
+                                <span>{{ assignment.total_submissions }} total</span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'attendance:grade_assignment' assignment.id %}" class="btn btn-sm btn-outline-primary" title="Grade Submissions">
+                                        <i class="fas fa-check"></i>
+                                    </a>
+                                    <a href="{% url 'attendance:view_assignment_details' assignment.id %}" class="btn btn-sm btn-outline-info" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-info-circle me-2"></i>No ungraded assignments
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unmarked Attendance -->
+    <div class="card">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="fas fa-clock text-danger me-2"></i>Unmarked Attendance (Today)
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Course</th>
+                            <th>Session Time</th>
+                            <th>Students</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for session in unmarked_attendance %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong>{{ session.course.course_code }}</strong>
+                                    <div class="text-muted small">{{ session.course.name }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div>{{ session.start_time|time:"g:i A" }} - {{ session.end_time|time:"g:i A" }}</div>
+                                <small class="text-muted">{{ session.date|date:"d M Y" }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-danger">{{ session.unmarked_count }} unmarked</span>
+                                <span class="text-muted">/</span>
+                                <span>{{ session.total_students }} total</span>
+                            </td>
+                            <td>
+                                {% if session.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'attendance:mark_attendance' session.id %}" class="btn btn-sm btn-outline-primary" title="Mark Attendance">
+                                        <i class="fas fa-check"></i>
+                                    </a>
+                                    <a href="{% url 'attendance:view_session_attendance' session.id %}" class="btn btn-sm btn-outline-info" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-info-circle me-2"></i>No unmarked attendance for today
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

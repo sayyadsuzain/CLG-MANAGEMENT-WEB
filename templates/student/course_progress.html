@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Course Progress - {{ progress.course.code }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Course Info -->
+        <div class="col-md-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ progress.course.name }}</h4>
+                        <span class="badge bg-light text-dark">{{ progress.course.code }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Attendance Progress -->
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <div class="progress-circle mx-auto mb-3" 
+                                         style="width: 150px; height: 150px;">
+                                        <div class="progress-circle-value">
+                                            {{ progress.attendance_percentage|floatformat:1 }}%
+                                        </div>
+                                    </div>
+                                    <h5>Attendance</h5>
+                                    <p class="text-muted mb-0">
+                                        {% if progress.attendance_percentage >= 75 %}
+                                            Good Standing
+                                        {% else %}
+                                            Needs Improvement
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Assignment Progress -->
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h3 class="display-4 mb-3">{{ progress.assignments_completed }}</h3>
+                                    <h5>Assignments Completed</h5>
+                                    <p class="text-muted mb-0">
+                                        Average Grade: 
+                                        {% if progress.average_grade > 0 %}
+                                            {{ progress.average_grade|floatformat:1 }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Course Status -->
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h3 class="mb-3">
+                                        {% if progress.attendance_percentage >= 75 and progress.average_grade >= 40 %}
+                                            <span class="text-success">On Track</span>
+                                        {% else %}
+                                            <span class="text-warning">Needs Attention</span>
+                                        {% endif %}
+                                    </h3>
+                                    <h5>Course Status</h5>
+                                    <p class="text-muted mb-0">Last Updated: {{ progress.last_updated|date:"M d, Y" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Detailed Progress -->
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Detailed Progress</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs" id="progressTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="attendance-tab" data-bs-toggle="tab" 
+                               href="#attendance" role="tab">Attendance History</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="assignments-tab" data-bs-toggle="tab" 
+                               href="#assignments" role="tab">Assignments</a>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content mt-3" id="progressTabContent">
+                        <!-- Attendance History -->
+                        <div class="tab-pane fade show active" id="attendance" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                            <th>Marked By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for record in progress.course.attendance_records.all %}
+                                        <tr>
+                                            <td>{{ record.date|date:"M d, Y" }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ record.status|lower }}">
+                                                    {{ record.status }}
+                                                </span>
+                                            </td>
+                                            <td>{{ record.marked_by.user.get_full_name }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">
+                                                No attendance records found
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Assignments -->
+                        <div class="tab-pane fade" id="assignments" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Title</th>
+                                            <th>Due Date</th>
+                                            <th>Status</th>
+                                            <th>Grade</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for submission in progress.student.submissions.all %}
+                                        {% if submission.assignment.course == progress.course %}
+                                        <tr>
+                                            <td>{{ submission.assignment.title }}</td>
+                                            <td>{{ submission.assignment.due_date|date:"M d, Y" }}</td>
+                                            <td>
+                                                {% if submission.marks %}
+                                                    <span class="badge bg-success">Graded</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">Pending</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if submission.marks %}
+                                                    {{ submission.marks }}/{{ submission.assignment.max_marks }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">
+                                                No assignments found
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+    .progress-circle {
+        position: relative;
+        border-radius: 50%;
+        background: #f0f0f0;
+    }
+    
+    .progress-circle::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: conic-gradient(
+            from 0deg,
+            var(--bs-primary) calc({{ progress.attendance_percentage }} * 1%),
+            transparent calc({{ progress.attendance_percentage }} * 1%)
+        );
+    }
+    
+    .progress-circle-value {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize Bootstrap tabs
+    var triggerTabList = [].slice.call(document.querySelectorAll('#progressTabs a'))
+    triggerTabList.forEach(function (triggerEl) {
+        var tabTrigger = new bootstrap.Tab(triggerEl)
+        triggerEl.addEventListener('click', function (event) {
+            event.preventDefault()
+            tabTrigger.show()
+        })
+    })
+</script>
+{% endblock %}
+{% endblock %} 

@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Submit Assignment - {{ assignment.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Assignment Details -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">{{ assignment.title }}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>Description</h5>
+                        <p>{{ assignment.description }}</p>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Due Date</h5>
+                            <p>{{ assignment.due_date|date:"F d, Y h:i A" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Maximum Marks</h5>
+                            <p>{{ assignment.max_marks }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if assignment.assignment_file %}
+                    <div class="mb-4">
+                        <h5>Assignment File</h5>
+                        <a href="{{ assignment.assignment_file.url }}" class="btn btn-outline-primary" target="_blank">
+                            <i class="fas fa-file-pdf"></i> Download Assignment PDF
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if is_past_due %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> This assignment is past due date.
+                    </div>
+                    {% endif %}
+                    
+                    {% if existing_submission %}
+                    <div class="alert alert-info">
+                        <h5>Previous Submission</h5>
+                        <p>Submitted on: {{ existing_submission.submitted_at|date:"F d, Y h:i A" }}</p>
+                        <a href="{{ existing_submission.submission_file.url }}" class="btn btn-sm btn-outline-info" target="_blank">
+                            View Submission
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="submission_file" class="form-label">Upload Your Work (PDF)</label>
+                            <input type="file" class="form-control" id="submission_file" name="submission_file" accept=".pdf" required>
+                            <div class="form-text">Maximum file size: 10MB</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary" {% if is_past_due %}disabled{% endif %}>
+                                {% if existing_submission %}Update Submission{% else %}Submit Assignment{% endif %}
+                            </button>
+                            <a href="{% url 'attendance:view_course_assignments' assignment.course.id %}" class="btn btn-outline-secondary">Back to Assignments</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Submission Guidelines -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Submission Guidelines</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i>
+                            Submit your work in PDF format only
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i>
+                            Maximum file size: 10MB
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i>
+                            Make sure your submission is clear and readable
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i>
+                            You can update your submission until the due date
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Form validation
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })()
+    
+    // File size validation
+    document.getElementById('submission_file').addEventListener('change', function(e) {
+        const file = e.target.files[0]
+        if (file.size > 10 * 1024 * 1024) { // 10MB in bytes
+            alert('File size exceeds 10MB limit')
+            e.target.value = ''
+        }
+    })
+</script>
+{% endblock %}
+{% endblock %} 

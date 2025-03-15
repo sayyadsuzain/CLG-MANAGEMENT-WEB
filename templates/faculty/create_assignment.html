@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Assignment - {{ course.code }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Create Assignment - {{ course.name }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="due_date" class="form-label">Due Date</label>
+                                    <input type="datetime-local" class="form-control" id="due_date" name="due_date" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="max_marks" class="form-label">Maximum Marks</label>
+                                    <input type="number" class="form-control" id="max_marks" name="max_marks" min="0" step="0.5" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="assignment_file" class="form-label">Assignment File (PDF)</label>
+                            <input type="file" class="form-control" id="assignment_file" name="assignment_file" accept=".pdf">
+                            <div class="form-text">Upload a PDF file containing the assignment details or questions</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Create Assignment</button>
+                            <div class="d-flex justify-content-between mt-2">
+                                <a href="{% url 'attendance:faculty_dashboard' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                                </a>
+                                <a href="{% url 'attendance:course_assignments' course.id %}" class="btn btn-outline-secondary">Cancel</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Tips Card -->
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Tips for Creating Effective Assignments</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">✓ Clear and concise instructions</li>
+                        <li class="mb-2">✓ Realistic deadlines</li>
+                        <li class="mb-2">✓ Detailed marking criteria</li>
+                        <li class="mb-2">✓ Learning objectives</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Assignments Sidebar -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Recent Assignments</h5>
+                </div>
+                <div class="card-body">
+                    {% for assignment in course.assignments.all|slice:":5" %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <h6 class="mb-0">{{ assignment.title }}</h6>
+                            <small class="text-muted">Due: {{ assignment.due_date|date:"M d, Y" }}</small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted mb-0">No recent assignments</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Form validation
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })()
+</script>
+{% endblock %}
+{% endblock %} 

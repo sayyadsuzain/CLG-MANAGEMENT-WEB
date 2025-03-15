@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Grades - {{ student.name }} - Faculty Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'attendance:faculty_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'attendance:view_all_students' %}">All Students</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'attendance:student_details' student.id %}">{{ student.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Grades</li>
+        </ol>
+    </nav>
+
+    <!-- Course Grades -->
+    {% for grade_info in course_grades %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">{{ grade_info.course.code }} - {{ grade_info.course.name }}</h5>
+            <div>
+                <span class="badge bg-info">Average: {{ grade_info.average }}/10</span>
+                <span class="badge bg-secondary ms-2">Total Assignments: {{ grade_info.total_assignments }}</span>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if grade_info.submissions %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Assignment</th>
+                            <th>Due Date</th>
+                            <th>Submitted</th>
+                            <th>Status</th>
+                            <th>Marks</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for submission in grade_info.submissions %}
+                        <tr>
+                            <td>{{ submission.assignment.title }}</td>
+                            <td>{{ submission.assignment.due_date|date:"M d, Y" }}</td>
+                            <td>{{ submission.submitted_at|date:"M d, Y H:i" }}</td>
+                            <td>
+                                {% if submission.marks %}
+                                <span class="badge bg-success">Graded</span>
+                                {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if submission.marks %}
+                                <span class="{% if submission.marks >= 6 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ submission.marks }}/10
+                                </span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'attendance:grade_assignment' submission.assignment.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> View & Grade
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">No submissions found for this course.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> No grade information available for any courses.
+    </div>
+    {% endfor %}
+</div>
+{% endblock %} 

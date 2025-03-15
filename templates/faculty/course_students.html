@@ -1,9 +1,13 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
+{% load attendance_extras %}
+{% load static %}
 
 {% block title %}{{ course.name }} Students - College Management System{% endblock %}
 
 {% block content %}
 <div class="container py-4">
+    {% csrf_token %}
     <div class="row mb-4">
         <div class="col-md-12">
             <nav aria-label="breadcrumb">
@@ -15,9 +19,9 @@
             <div class="d-flex justify-content-between align-items-center">
                 <h2>{{ course.name }} Students</h2>
                 <div>
-                    <a href="{% url 'attendance:add_student' %}" class="btn btn-primary">
-                        <i class="fas fa-user-plus me-2"></i>Add New Student
-                    </a>
+                    <button class="btn btn-light" onclick="showAddStudentModal()">
+                        <i class="fas fa-user-plus"></i> Add Student
+                    </button>
                 </div>
             </div>
         </div>
@@ -36,6 +40,11 @@
                         <table class="table table-hover">
                             <thead>
                                 <tr>
+                                    <th>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="selectAllStudents">
+                                        </div>
+                                    </th>
                                     <th>Student ID</th>
                                     <th>Name</th>
                                     <th>Email</th>
@@ -45,7 +54,15 @@
                             </thead>
                             <tbody>
                                 {% for student in students %}
-                                <tr>
+                                <tr data-student-id="{{ student.id }}">
+                                    <td>
+                                        <div class="form-check">
+                                            <input class="form-check-input student-checkbox" 
+                                                   type="checkbox" 
+                                                   id="student-checkbox-{{ student.id }}"
+                                                   onchange="toggleStudentSelection({{ student.id }})">
+                                        </div>
+                                    </td>
                                     <td>{{ student.student_id }}</td>
                                     <td>{{ student.user.get_full_name }}</td>
                                     <td>{{ student.user.email }}</td>
@@ -151,12 +168,89 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to remove this student from the course?</p>
-                <p class="text-danger">This action cannot be undone.</p>
+                <!-- Will be populated dynamically -->
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirmRemoveBtn">Remove</button>
+                <button type="button" class="btn btn-danger" onclick="removeStudents()">Remove Student</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Student Modal -->
+<div class="modal fade" id="addStudentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Student</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addStudentForm" class="needs-validation" novalidate>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="firstName" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="firstName" name="first_name" required>
+                            <div class="invalid-feedback">Please enter first name</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="lastName" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="lastName" name="last_name" required>
+                            <div class="invalid-feedback">Please enter last name</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="invalid-feedback">Please enter a valid email</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="studentId" class="form-label">Student ID</label>
+                            <input type="text" class="form-control" id="studentId" name="student_id" required>
+                            <div class="invalid-feedback">Please enter student ID</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="department" class="form-label">Department</label>
+                            <select class="form-select" id="department" name="department" required>
+                                <option value="">Select Department</option>
+                                <option value="Computer Science">Computer Science</option>
+                                <option value="Information Technology">Information Technology</option>
+                                <option value="Electronics">Electronics</option>
+                                <option value="Mechanical">Mechanical</option>
+                                <option value="Civil">Civil</option>
+                            </select>
+                            <div class="invalid-feedback">Please select a department</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="semester" class="form-label">Semester</label>
+                            <select class="form-select" id="semester" name="semester" required>
+                                <option value="">Select Semester</option>
+                                {% for i in "12345678"|make_list %}
+                                <option value="{{ i }}">Semester {{ i }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Please select a semester</div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <small>
+                            <i class="fas fa-info-circle"></i> 
+                            The student will be automatically enrolled in {{ course.name }} ({{ course.course_code }}).
+                            Initial password will be set to the Student ID.
+                        </small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addStudent()">Add Student</button>
             </div>
         </div>
     </div>
@@ -164,7 +258,209 @@
 
 {% block extra_js %}
 <script>
-    let studentToRemove = null;
+    // Global variables
+    let selectedStudents = new Set();
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    function toggleStudentSelection(studentId) {
+        const checkbox = document.getElementById(`student-checkbox-${studentId}`);
+        if (checkbox.checked) {
+            selectedStudents.add(studentId);
+        } else {
+            selectedStudents.delete(studentId);
+        }
+        updateRemoveButton();
+    }
+    
+    function updateRemoveButton() {
+        const removeBtn = document.getElementById('batchRemoveBtn');
+        if (selectedStudents.size > 0) {
+            removeBtn.disabled = false;
+            removeBtn.textContent = `Remove Selected (${selectedStudents.size})`;
+        } else {
+            removeBtn.disabled = true;
+            removeBtn.textContent = 'Remove Selected';
+        }
+    }
+    
+    function showRemoveConfirmation(studentId = null) {
+        const modal = new bootstrap.Modal(document.getElementById('removeStudentModal'));
+        const modalBody = document.querySelector('#removeStudentModal .modal-body');
+        const confirmBtn = document.querySelector('#removeStudentModal .btn-danger');
+        
+        // Clear previous alerts
+        modalBody.querySelectorAll('.alert').forEach(alert => alert.remove());
+        
+        if (studentId) {
+            // Single student removal
+            selectedStudents.clear();
+            selectedStudents.add(studentId);
+            const studentRow = document.querySelector(`tr[data-student-id="${studentId}"]`);
+            const studentName = studentRow.querySelector('.student-name').textContent;
+            const studentEmail = studentRow.querySelector('.student-email').textContent;
+            
+            modalBody.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone.
+                </div>
+                <p>Are you sure you want to remove this student from the course?</p>
+                <div class="card bg-light mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">Student Details</h6>
+                        <p class="mb-1"><strong>Name:</strong> ${studentName}</p>
+                        <p class="mb-1"><strong>Email:</strong> ${studentEmail}</p>
+                    </div>
+                </div>
+                <p class="text-muted small">
+                    <i class="fas fa-info-circle me-1"></i>
+                    The student's attendance and grade records for this course will be preserved.
+                </p>
+            `;
+        } else {
+            // Batch removal
+            if (selectedStudents.size === 0) {
+                showAlert('Please select students to remove', 'warning');
+                return;
+            }
+            
+            const studentsList = Array.from(selectedStudents).map(id => {
+                const row = document.querySelector(`tr[data-student-id="${id}"]`);
+                return `
+                    <li class="list-group-item">
+                        ${row.querySelector('.student-name').textContent}
+                        <small class="text-muted">(${row.querySelector('.student-email').textContent})</small>
+                    </li>
+                `;
+            }).join('');
+            
+            modalBody.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> You are about to remove multiple students.
+                </div>
+                <p>Are you sure you want to remove these ${selectedStudents.size} students from the course?</p>
+                <div class="card bg-light mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">Selected Students</h6>
+                        <ul class="list-group list-group-flush">
+                            ${studentsList}
+                        </ul>
+                    </div>
+                </div>
+                <p class="text-muted small">
+                    <i class="fas fa-info-circle me-1"></i>
+                    The students' attendance and grade records for this course will be preserved.
+                </p>
+            `;
+        }
+        
+        confirmBtn.onclick = () => removeStudents();
+        modal.show();
+    }
+    
+    function removeStudents() {
+        const courseId = {{ course.id }};
+        const modal = document.getElementById('removeStudentModal');
+        const confirmBtn = modal.querySelector('.btn-danger');
+        const modalBody = modal.querySelector('.modal-body');
+        
+        // Show loading state
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+        
+        // Create form data for the request
+        const formData = new FormData();
+        formData.append('student_id', Array.from(selectedStudents)[0]); // Send first selected student ID
+        formData.append('csrfmiddlewaretoken', csrfToken);
+        
+        // First, verify enrollment status
+        fetch(`/faculty/verify-enrollment/${courseId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'include',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.exists) {
+                if (data.enrolled) {
+                    // Student is enrolled, proceed with removal
+                    proceedWithRemoval(courseId, modal, confirmBtn, modalBody);
+                } else {
+                    showErrorInModal(modalBody, 'Student is not enrolled in this course', confirmBtn);
+                }
+            } else {
+                showErrorInModal(modalBody, 'Student not found', confirmBtn);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showErrorInModal(modalBody, 'Failed to verify enrollment status', confirmBtn);
+        });
+    }
+
+    function showErrorInModal(modalBody, message, confirmBtn) {
+        modalBody.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <strong>Error:</strong> ${message}
+            </div>
+        `;
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = 'Try Again';
+    }
+    
+    function proceedWithRemoval(courseId, modal, confirmBtn, modalBody) {
+        // Show loading state
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Removing...';
+        
+        // Create form data
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', csrfToken);
+        formData.append('student_ids', JSON.stringify(Array.from(selectedStudents)));
+        
+        fetch(`/faculty/remove-students/${courseId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 403) {
+                    throw new Error('Permission denied. Please ensure you are logged in as faculty.');
+                }
+                throw new Error('Failed to remove students');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message || 'Students removed successfully', 'success');
+                bootstrap.Modal.getInstance(modal).hide();
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                throw new Error(data.error || 'Failed to remove students');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showErrorInModal(modalBody, error.message, confirmBtn);
+        });
+    }
     
     function viewStudentDetails(studentId) {
         const modal = new bootstrap.Modal(document.getElementById('studentDetailsModal'));
@@ -173,69 +469,289 @@
         content.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div><p>Loading student details...</p></div>';
         modal.show();
         
-        // This would typically be an AJAX call to get student details
-        // For now, we'll just show a placeholder
-        setTimeout(() => {
-            content.innerHTML = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Personal Information</h6>
-                        <p><strong>Student ID:</strong> Loading...</p>
-                        <p><strong>Name:</strong> Loading...</p>
-                        <p><strong>Email:</strong> Loading...</p>
+        fetch(`${window.location.pathname}?student_id=${studentId}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => response.json())
+        .then(response => {
+            if (response.success) {
+                const data = response.data;
+                content.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Personal Information</h6>
+                            <p><strong>Student ID:</strong> ${data.student_id}</p>
+                            <p><strong>Name:</strong> ${data.name}</p>
+                            <p><strong>Email:</strong> ${data.email}</p>
+                            <p><strong>Department:</strong> ${data.department}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Academic Information</h6>
+                            <p><strong>Attendance:</strong> ${data.attendance_percentage}%</p>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <h6>Academic Information</h6>
-                        <p><strong>Attendance:</strong> Loading...</p>
-                        <p><strong>Grades:</strong> Loading...</p>
-                        <p><strong>Assignments:</strong> Loading...</p>
+                    <div class="mt-3">
+                        <h6>Recent Attendance</h6>
+                        ${data.recent_attendance.length ? `
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${data.recent_attendance.map(record => `
+                                            <tr>
+                                                <td>${record.date}</td>
+                                                <td><span class="badge bg-${record.status === 'Present' ? 'success' : 'danger'}">${record.status}</span></td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ` : '<div class="alert alert-info">No recent attendance records found.</div>'}
                     </div>
-                </div>
-                <div class="mt-3">
-                    <h6>Recent Activity</h6>
-                    <div class="alert alert-info">No recent activity found.</div>
-                </div>
-            `;
-        }, 1000);
+                    <div class="mt-3">
+                        <h6>Recent Assignments</h6>
+                        ${data.recent_assignments.length ? `
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Title</th>
+                                            <th>Submitted</th>
+                                            <th>Grade</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${data.recent_assignments.map(assignment => `
+                                            <tr>
+                                                <td>${assignment.title}</td>
+                                                <td>${assignment.submitted_at}</td>
+                                                <td>${assignment.grade}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ` : '<div class="alert alert-info">No recent assignments found.</div>'}
+                    </div>
+                `;
+            } else {
+                content.innerHTML = '<div class="alert alert-danger">Failed to load student details.</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            content.innerHTML = '<div class="alert alert-danger">An error occurred while loading student details.</div>';
+        });
     }
     
     function manageGrades(studentId) {
         window.location.href = `{% url 'attendance:manage_grades' %}?course_id={{ course.id }}&student_id=${studentId}`;
     }
     
-    function removeStudent(studentId) {
-        studentToRemove = studentId;
-        const modal = new bootstrap.Modal(document.getElementById('removeStudentModal'));
+    function showAddStudentModal() {
+        const modal = new bootstrap.Modal(document.getElementById('addStudentModal'));
+        document.getElementById('addStudentForm').reset();
         modal.show();
     }
     
-    document.addEventListener('DOMContentLoaded', function() {
-        const confirmRemoveBtn = document.getElementById('confirmRemoveBtn');
+    function addStudent() {
+        const form = document.getElementById('addStudentForm');
         
-        confirmRemoveBtn.addEventListener('click', function() {
-            if (studentToRemove) {
-                // Send AJAX request to remove student
-                fetch(`{% url 'attendance:remove_student_from_course' course.id 0 %}`.replace('0', studentToRemove), {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            return;
+        }
+
+        const formData = {
+            first_name: document.getElementById('firstName').value.trim(),
+            last_name: document.getElementById('lastName').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            student_id: document.getElementById('studentId').value.trim(),
+            department: document.getElementById('department').value,
+            semester: document.getElementById('semester').value,
+            course_id: {{ course.id }}
+        };
+
+        // Show loading state
+        const submitBtn = document.querySelector('#addStudentModal .btn-primary');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding...';
+
+        fetch('{% url "attendance:add_student" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken
+            },
+            body: Object.keys(formData)
+                .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(formData[key])}`)
+                .join('&')
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                // Reset button state
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+                
+                // Show error in a more user-friendly way
+                const errorMessage = data.error || 'Failed to add student';
+                const errorField = data.field;
+                
+                if (errorField) {
+                    // If there's a specific field with error, highlight it
+                    const input = document.getElementById(errorField);
+                    if (input) {
+                        input.classList.add('is-invalid');
+                        const feedback = input.nextElementSibling;
+                        if (feedback && feedback.classList.contains('invalid-feedback')) {
+                            feedback.textContent = errorMessage;
+                        }
                     }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Failed to remove student');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while removing the student');
-                });
+                } else {
+                    // Show error in modal body
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
+                    alertDiv.innerHTML = `
+                        ${errorMessage}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    form.insertAdjacentElement('beforebegin', alertDiv);
+                }
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Reset button state
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            
+            // Show error in modal body
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
+            alertDiv.innerHTML = `
+                An error occurred while adding the student
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            form.insertAdjacentElement('beforebegin', alertDiv);
+        });
+    }
+    
+    // Update the table to include checkboxes and new structure
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add checkbox column to table header
+        const headerRow = document.querySelector('table thead tr');
+        headerRow.insertAdjacentHTML('afterbegin', `
+            <th>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="selectAllStudents">
+                </div>
+            </th>
+        `);
+        
+        // Add checkboxes to each student row
+        document.querySelectorAll('table tbody tr').forEach(row => {
+            const studentId = row.querySelector('[onclick*="viewStudentDetails"]')
+                .getAttribute('onclick')
+                .match(/\d+/)[0];
+            
+            row.setAttribute('data-student-id', studentId);
+            row.insertAdjacentHTML('afterbegin', `
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input student-checkbox" 
+                               type="checkbox" 
+                               id="student-checkbox-${studentId}"
+                               onchange="toggleStudentSelection(${studentId})">
+                    </div>
+                </td>
+            `);
+            
+            // Add classes for easier selection
+            row.querySelector('td:nth-child(3)').classList.add('student-name');
+            row.querySelector('td:nth-child(4)').classList.add('student-email');
+        });
+        
+        // Add batch remove button
+        document.querySelector('.card-header .badge').insertAdjacentHTML('beforebegin', `
+            <button id="batchRemoveBtn" class="btn btn-danger btn-sm me-2" 
+                    onclick="showRemoveConfirmation()" disabled>
+                Remove Selected
+            </button>
+        `);
+        
+        // Handle select all checkbox
+        document.getElementById('selectAllStudents').addEventListener('change', function(e) {
+            const checkboxes = document.querySelectorAll('.student-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = e.target.checked;
+                const studentId = checkbox.id.replace('student-checkbox-', '');
+                if (e.target.checked) {
+                    selectedStudents.add(parseInt(studentId));
+                } else {
+                    selectedStudents.delete(parseInt(studentId));
+                }
+            });
+            updateRemoveButton();
         });
     });
+
+    // Helper function to show alerts
+    function showAlert(message, type = 'success') {
+        const alertContainer = document.getElementById('alertContainer');
+        if (!alertContainer) {
+            console.error('Alert container not found');
+            return;
+        }
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        alertContainer.appendChild(alertDiv);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+    }
+
+    function removeStudent(studentId) {
+        const courseId = {{ course.id }};
+        
+        fetch(`/faculty/remove-student/${courseId}/${studentId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `student_id=${studentId}&course_id=${courseId}`
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                throw new Error('Failed to remove student');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Error removing student', 'danger');
+        });
+    }
 </script>
 {% endblock %}
 {% endblock %} 

@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Progress Overview{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Overall Progress Summary -->
+        <div class="col-md-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Progress Overview</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h3 class="mb-0">
+                                        {{ progress_records|length }}
+                                    </h3>
+                                    <p class="text-muted mb-0">Enrolled Courses</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h3 class="mb-0">
+                                        {% with total_assignments=0 %}
+                                            {% for record in progress_records %}
+                                                {% with total_assignments=total_assignments|add:record.assignments_completed %}
+                                                {% endwith %}
+                                            {% endfor %}
+                                            {{ total_assignments }}
+                                        {% endwith %}
+                                    </h3>
+                                    <p class="mb-0">Completed Assignments</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h3 class="mb-0">
+                                        {% with total_attendance=0 %}
+                                            {% for record in progress_records %}
+                                                {% with total_attendance=total_attendance|add:record.attendance_percentage %}
+                                                {% endwith %}
+                                            {% endfor %}
+                                            {{ total_attendance|divisibleby:progress_records|length|floatformat:1 }}%
+                                        {% endwith %}
+                                    </h3>
+                                    <p class="mb-0">Average Attendance</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Course-wise Progress -->
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Course-wise Progress</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>Attendance</th>
+                                    <th>Assignments</th>
+                                    <th>Average Grade</th>
+                                    <th>Last Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in progress_records %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ record.course.code }}</strong><br>
+                                        <small class="text-muted">{{ record.course.name }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar {% if record.attendance_percentage >= 75 %}bg-success{% else %}bg-warning{% endif %}" 
+                                                 role="progressbar" 
+                                                 style="width: {{ record.attendance_percentage }}%"
+                                                 aria-valuenow="{{ record.attendance_percentage }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ record.attendance_percentage|floatformat:1 }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ record.assignments_completed }}</td>
+                                    <td>
+                                        {% if record.average_grade > 0 %}
+                                            {{ record.average_grade|floatformat:1 }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ record.last_updated|date:"M d, Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'course_progress' record.course.id %}" 
+                                           class="btn btn-sm btn-primary">
+                                            View Details
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">
+                                        No courses enrolled
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+</script>
+{% endblock %}
+{% endblock %} 

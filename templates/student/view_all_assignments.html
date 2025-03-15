@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% load static %}
+
+{% block title %}All Assignments{% endblock %}
+
+{% block content %}
+{% get_current_time as now %}
+<div class="container py-4">
+    <!-- Header with Back Button -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">All Assignments</h2>
+        <a href="{% url 'attendance:student_dashboard' %}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Assignments Table Card -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <div class="row align-items-center">
+                <div class="col-md-2">Course</div>
+                <div class="col-md-3">Title</div>
+                <div class="col-md-2">Due Date</div>
+                <div class="col-md-2">Status</div>
+                <div class="col-md-3">Actions</div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if messages %}
+            <div class="messages mb-4">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if assignments %}
+                {% for assignment in assignments %}
+                    <div class="row align-items-center py-2 border-bottom">
+                        <div class="col-md-2">{{ assignment.course.name }}</div>
+                        <div class="col-md-3">{{ assignment.title }}</div>
+                        <div class="col-md-2">{{ assignment.due_date|date:"M d, Y H:i" }}</div>
+                        <div class="col-md-2">
+                            {% if assignment.id in submissions %}
+                                {% with submission=submissions|get_item:assignment.id %}
+                                    {% if submission.grade %}
+                                        <span class="badge bg-success">Graded</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Submitted</span>
+                                    {% endif %}
+                                {% endwith %}
+                            {% else %}
+                                {% if assignment.due_date < now %}
+                                    <span class="badge bg-danger">Overdue</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'attendance:view_assignment_detail' assignment.id %}" 
+                               class="btn btn-primary btn-sm me-2">View Details</a>
+                            {% if assignment.id not in submissions and assignment.due_date > now %}
+                                <a href="{% url 'attendance:submit_assignment' assignment.id %}" 
+                                   class="btn btn-success btn-sm">Submit</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-3">
+                    <p class="text-muted mb-0">No assignments found.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .badge {
+        font-size: 0.875rem;
+        padding: 0.4em 0.8em;
+    }
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %} 

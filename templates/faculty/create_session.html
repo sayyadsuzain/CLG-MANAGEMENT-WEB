@@ -11,20 +11,20 @@
                     <h4 class="mb-0">Create Attendance Session</h4>
                 </div>
                 <div class="card-body">
-                    <form method="post">
+                    <form method="post" action="{% url 'attendance:create_session' %}">
                         {% csrf_token %}
                         <div class="mb-3">
                             <label for="course" class="form-label">Select Course</label>
                             <select class="form-select" id="course" name="course" required>
                                 <option value="">Choose a course...</option>
                                 {% for course in courses %}
-                                <option value="{{ course.id }}">{{ course.code }} - {{ course.name }}</option>
+                                <option value="{{ course.id }}">{{ course.course_code }} - {{ course.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="mb-3">
                             <label for="date" class="form-label">Date</label>
-                            <input type="date" class="form-control" id="date" name="date" required>
+                            <input type="date" class="form-control" id="date" name="date" value="{{ today|date:'Y-m-d' }}" required>
                         </div>
                         <div class="row">
                             <div class="col-md-6">
@@ -41,7 +41,7 @@
                             </div>
                         </div>
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
                                 <i class="fas fa-plus-circle me-2"></i>Create Session
                             </button>
                         </div>
@@ -53,11 +53,18 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">Manage Students</h4>
+                    <h4 class="mb-0">Course Students</h4>
                 </div>
                 <div class="card-body">
                     <div id="courseStudents">
-                        <p class="text-muted">Select a course to view and manage students</p>
+                        <p class="text-muted">Select a course to view students</p>
+                    </div>
+                    <div id="loadingIndicator" style="display: none;">
+                        <div class="d-flex justify-content-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -91,41 +98,67 @@
 <script>
 document.getElementById('course').addEventListener('change', function() {
     const courseId = this.value;
-    if (courseId) {
-        fetch(`/faculty/get-course-students/${courseId}/`)
-            .then(response => response.json())
-            .then(data => {
-                const studentsDiv = document.getElementById('courseStudents');
-                if (data.students.length > 0) {
-                    let html = '<ul class="list-group">';
-                    data.students.forEach(student => {
-                        html += `
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                ${student.name}
-                                <button class="btn btn-sm btn-danger" onclick="removeStudent(${courseId}, ${student.id})">
-                                    <i class="fas fa-user-minus"></i>
-                                </button>
-                            </li>`;
-                    });
-                    html += '</ul>';
-                    html += `
-                        <div class="mt-3">
-                            <button class="btn btn-success btn-sm w-100" onclick="showAddStudentModal(${courseId})">
-                                <i class="fas fa-user-plus me-2"></i>Add Student
-                            </button>
-                        </div>`;
-                    studentsDiv.innerHTML = html;
-                } else {
-                    studentsDiv.innerHTML = `
-                        <p class="text-muted">No students enrolled</p>
-                        <button class="btn btn-success btn-sm w-100" onclick="showAddStudentModal(${courseId})">
-                            <i class="fas fa-user-plus me-2"></i>Add Student
-                        </button>`;
-                }
-            });
-    } else {
-        document.getElementById('courseStudents').innerHTML = '<p class="text-muted">Select a course to view and manage students</p>';
+    const studentsDiv = document.getElementById('courseStudents');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+
+    if (!courseId) {
+        studentsDiv.innerHTML = '<p class="text-muted">Select a course to view students</p>';
+        return;
     }
+
+    // Show loading indicator
+    studentsDiv.style.display = 'none';
+    loadingIndicator.style.display = 'block';
+
+    fetch(`/faculty/get-course-students/${courseId}/`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success && data.students) {
+            let html = '<div class="list-group">';
+            data.students.forEach(student => {
+                html += `
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${student.name}</strong><br>
+                                <small class="text-muted">${student.student_id}</small>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            html += '</div>';
+            
+            if (data.students.length === 0) {
+                html = '<p class="text-muted">No students enrolled in this course</p>';
+            }
+            
+            studentsDiv.innerHTML = html;
+        } else {
+            throw new Error(data.error || 'Failed to load students');
+        }
+    })
+    .catch(error => {
+        studentsDiv.innerHTML = `
+            <div class="alert alert-danger">
+                Error loading students: ${error.message}
+            </div>`;
+    })
+    .finally(() => {
+        // Hide loading indicator and show content
+        loadingIndicator.style.display = 'none';
+        studentsDiv.style.display = 'block';
+    });
+});
+
+// Set default date to today
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('date').value = today;
 });
 
 function showAddStudentModal(courseId) {

@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load attendance_extras %}
+
+{% block title %}Student Details - {{ student.user.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'attendance:faculty_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'attendance:view_all_students' %}">All Students</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Student Details</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Student Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Student ID:</strong> {{ student.student_id }}</p>
+                            <p><strong>Name:</strong> {{ student.user.get_full_name }}</p>
+                            <p><strong>Email:</strong> {{ student.user.email }}</p>
+                            <p><strong>Department:</strong> {{ student.department }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Overall Attendance:</strong> 
+                                <span class="badge {% if attendance_percentage >= 75 %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ attendance_percentage }}%
+                                </span>
+                            </p>
+                            <p><strong>Total Sessions:</strong> {{ total_sessions }}</p>
+                            <p><strong>Present Sessions:</strong> {{ present_sessions }}</p>
+                            <p><strong>Absent Sessions:</strong> {{ total_sessions|subtract:present_sessions }}</p>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <h6>Enrolled Courses</h6>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Course Code</th>
+                                            <th>Course Name</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for course in courses %}
+                                        <tr>
+                                            <td>{{ course.course_code }}</td>
+                                            <td>{{ course.name }}</td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <a href="{% url 'attendance:student_attendance' student.id %}" class="btn btn-sm btn-info">
+                                                        <i class="fas fa-calendar-check"></i> View Attendance
+                                                    </a>
+                                                    <a href="{% url 'attendance:student_grades' student.id %}" class="btn btn-sm btn-warning">
+                                                        <i class="fas fa-chart-line"></i> View Grades
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <h6>Recent Assignments</h6>
+                            {% if recent_assignments %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Course</th>
+                                            <th>Assignment</th>
+                                            <th>Submitted On</th>
+                                            <th>Status</th>
+                                            <th>Grade</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for submission in recent_assignments %}
+                                        <tr>
+                                            <td>{{ submission.assignment.course.name }}</td>
+                                            <td>{{ submission.assignment.title }}</td>
+                                            <td>{{ submission.submitted_at|date:"d M Y, h:i A" }}</td>
+                                            <td>
+                                                {% if submission.marks %}
+                                                    <span class="badge bg-success">Graded</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">Pending</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if submission.marks %}
+                                                    {{ submission.marks }}/10
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>No recent assignments found.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add any additional JavaScript if needed
+</script>
+{% endblock %} 

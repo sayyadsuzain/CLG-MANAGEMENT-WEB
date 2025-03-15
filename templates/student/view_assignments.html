@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}{{ course.name }} - Assignments{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'attendance:student_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'attendance:view_courses' %}">My Courses</a></li>
+            <li class="breadcrumb-item active">{{ course.name }} Assignments</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Course Assignments</h5>
+            <span class="badge bg-light text-dark">Total: {{ assignments|length }}</span>
+        </div>
+        <div class="card-body">
+            {% if assignments %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Due Date</th>
+                                <th>Max Marks</th>
+                                <th>Assignment File</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assignment in assignments %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'attendance:view_assignment_detail' assignment.id %}" class="text-decoration-none">
+                                            {{ assignment.title }}
+                                        </a>
+                                    </td>
+                                    <td>{{ assignment.due_date|date:"M d, Y h:i A" }}</td>
+                                    <td>{{ assignment.max_marks }}</td>
+                                    <td>
+                                        {% if assignment.file %}
+                                            <a href="{{ assignment.file.url }}" class="btn btn-sm btn-info" target="_blank">
+                                                <i class="fas fa-download"></i> Download
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">No file attached</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if assignment.id in submissions %}
+                                            {% with submission=submissions|get_item:assignment.id %}
+                                                {% if submission.marks %}
+                                                    <span class="badge bg-success">Graded: {{ submission.marks }}/{{ assignment.max_marks }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-info">Submitted</span>
+                                                {% endif %}
+                                            {% endwith %}
+                                        {% else %}
+                                            {% if assignment.is_past_due %}
+                                                <span class="badge bg-danger">Overdue</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Pending</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{% url 'attendance:view_assignment_detail' assignment.id %}" 
+                                               class="btn btn-sm btn-primary">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                            {% if assignment.id not in submissions and not assignment.is_past_due %}
+                                                <a href="{% url 'attendance:submit_assignment' assignment.id %}" 
+                                                   class="btn btn-sm btn-success">
+                                                    <i class="fas fa-upload"></i> Submit
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>No assignments found for this course.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

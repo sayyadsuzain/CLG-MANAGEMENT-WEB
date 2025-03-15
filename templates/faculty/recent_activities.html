@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load attendance_filters %}
+
+{% block title %}Recent Activities - Faculty Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Breadcrumb and Title -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'attendance:faculty_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Recent Activities</li>
+                </ol>
+            </nav>
+            <h2>Recent Activities</h2>
+        </div>
+        <a href="{% url 'attendance:faculty_dashboard' %}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Activities List -->
+    <div class="card">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="fas fa-history text-primary me-2"></i>Activity Timeline
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if recent_activities %}
+                <div class="list-group">
+                    {% for activity in recent_activities %}
+                        {% if activity|class_name == 'AttendanceRecord' %}
+                            <a href="{% url 'attendance:student_attendance' activity.student.id %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-check-circle text-success me-2"></i>Attendance Marked
+                                    </h6>
+                                    <small class="text-muted">{{ activity.marked_at|timesince }} ago</small>
+                                </div>
+                                <p class="mb-1">
+                                    {{ activity.student.user.get_full_name }} was marked 
+                                    <span class="badge {% if activity.status %}bg-success{% else %}bg-danger{% endif %}">
+                                        {% if activity.status %}Present{% else %}Absent{% endif %}
+                                    </span>
+                                </p>
+                                <small class="text-muted">
+                                    Course: {{ activity.session.course.name }} ({{ activity.session.date }})
+                                </small>
+                            </a>
+                        {% elif activity|class_name == 'AssignmentSubmission' %}
+                            <a href="{% url 'attendance:grade_assignment' activity.assignment.id %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-file-alt text-primary me-2"></i>Assignment Submission
+                                    </h6>
+                                    <small class="text-muted">{{ activity.submitted_at|timesince }} ago</small>
+                                </div>
+                                <p class="mb-1">
+                                    {{ activity.student.user.get_full_name }} submitted 
+                                    "{{ activity.assignment.title }}"
+                                </p>
+                                <small class="text-muted">
+                                    Course: {{ activity.assignment.course.name }}
+                                </small>
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="fas fa-info-circle me-2"></i>No recent activities found.
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.list-group-item-action:hover {
+    background-color: #f8f9fa;
+    transition: background-color 0.2s ease-in-out;
+}
+</style>
+{% endblock %} 

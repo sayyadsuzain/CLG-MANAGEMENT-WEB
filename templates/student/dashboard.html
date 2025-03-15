@@ -1,179 +1,184 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Student Dashboard - College Management System{% endblock %}
+{% block title %}Student Dashboard{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-12">
-        <h2>Welcome, {{ user.get_full_name }}</h2>
-        <p class="text-muted">Student ID: {{ user.student.student_id }} | Department: {{ user.student.department }}</p>
-    </div>
-</div>
+<div class="container py-4">
+    <h2 class="mb-4">Welcome, {{ student.user.get_full_name }}</h2>
 
-<!-- Notices Section -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="fas fa-bullhorn me-2"></i>Important Notices</h5>
+    <!-- Statistics Cards Row -->
+    <div class="row mb-4">
+        <!-- Overall Attendance Card -->
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Overall Attendance</h5>
+                    <h2 class="display-4 mb-0">{{ attendance_percentage }}%</h2>
+                    <a href="{% url 'attendance:view_attendance' %}" class="stretched-link"></a>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <small class="text-muted">
+                        Present: {{ present_sessions }} | Absent: {{ absent_sessions }}
+                    </small>
+                </div>
             </div>
-            <div class="card-body">
-                {% if notices %}
-                    <div class="list-group">
-                        {% for notice in notices %}
-                            <div class="list-group-item list-group-item-action">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">{{ notice.title }}
-                                        {% if notice.priority == 'high' %}
-                                            <span class="badge bg-danger">High Priority</span>
-                                        {% elif notice.priority == 'medium' %}
-                                            <span class="badge bg-warning">Medium Priority</span>
-                                        {% endif %}
-                                    </h6>
-                                    <small>{{ notice.publish_date|date:"M d, Y" }}</small>
-                                </div>
-                                <p class="mb-1">{{ notice.content }}</p>
-                                <small class="text-muted">
-                                    Posted by {{ notice.created_by.get_full_name }}
-                                    {% if notice.course %}
-                                        for {{ notice.course.name }}
-                                    {% endif %}
-                                </small>
-                            </div>
+        </div>
+
+        <!-- Total Courses Card -->
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Courses</h5>
+                    <h2 class="display-4 mb-0">{{ total_courses }}</h2>
+                    <a href="{% url 'attendance:view_courses' %}" class="stretched-link"></a>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <small class="text-muted">Click to view all courses</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Assignments Card -->
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Pending Assignments</h5>
+                    <h2 class="display-4 mb-0">{{ pending_assignments }}</h2>
+                    <a href="{% url 'attendance:view_assignments' %}" class="stretched-link"></a>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <small class="text-muted">Click to view assignments</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grade Card -->
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Grades</h5>
+                    <div class="small">
+                        {% for course_grade in course_grades %}
+                            <div>{{ course_grade.course.name }}: {{ course_grade.grade }}</div>
+                        {% empty %}
+                            <p>No grades available</p>
                         {% endfor %}
                     </div>
-                {% else %}
-                    <p class="text-center mb-0">No notices at this time.</p>
-                {% endif %}
+                </div>
+                <div class="card-footer bg-transparent">
+                    <small class="text-muted">Course-wise grades</small>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Courses and Attendance Section -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>My Courses</h5>
-                <a href="{% url 'attendance:view_attendance' %}" class="btn btn-light btn-sm">
-                    <i class="fas fa-calendar-alt me-1"></i>View Full Attendance
-                </a>
-            </div>
-            <div class="card-body">
-                {% if attendance_data %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Course Code</th>
-                                    <th>Course Name</th>
-                                    <th>Attendance</th>
-                                    <th>Assignments</th>
-                                    <th>Grade</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for data in attendance_data %}
-                                    <tr>
-                                        <td>{{ data.course.course_code }}</td>
-                                        <td>{{ data.course.name }}</td>
-                                        <td>
-                                            <div class="progress" style="height: 20px;">
-                                                <div class="progress-bar {% if data.attendance_percentage >= 75 %}bg-success{% elif data.attendance_percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %}"
-                                                     role="progressbar"
-                                                     style="width: {{ data.attendance_percentage }}%"
-                                                     aria-valuenow="{{ data.attendance_percentage }}"
-                                                     aria-valuemin="0"
-                                                     aria-valuemax="100">
-                                                    {{ data.attendance_percentage }}%
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            {% if data.pending_assignments > 0 %}
-                                                <span class="badge bg-warning">{{ data.pending_assignments }} Pending</span>
-                                            {% else %}
-                                                <span class="badge bg-success">All Submitted</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if data.latest_grade %}
-                                                <span class="badge {% if data.latest_grade == 'F' %}bg-danger{% else %}bg-success{% endif %}">
-                                                    {{ data.latest_grade }}
-                                                </span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">Not Graded</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <div class="btn-group">
-                                                <a href="{% url 'attendance:view_attendance' %}?course={{ data.course.id }}" 
-                                                   class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-calendar-check me-1"></i>Attendance
-                                                </a>
-                                                <a href="{% url 'attendance:view_assignments' course_id=data.course.id %}" 
-                                                   class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-tasks me-1"></i>Assignments
-                                                </a>
-                                                <a href="{% url 'attendance:view_grades' course_id=data.course.id %}" 
-                                                   class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-chart-line me-1"></i>Grades
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-book-reader fa-3x text-muted mb-3"></i>
-                        <p class="lead">You are not enrolled in any courses yet.</p>
-                    </div>
-                {% endif %}
+    <div class="row">
+        <!-- Notices Section -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Recent Notices</h5>
+                </div>
+                <div class="card-body">
+                    {% if notices %}
+                        <div class="list-group list-group-flush">
+                            {% for notice in notices %}
+                                <div class="list-group-item">
+                                    <h6 class="mb-1">{{ notice.title }}</h6>
+                                    <p class="mb-1">{{ notice.content }}</p>
+                                    <small class="text-muted">
+                                        Posted on {{ notice.created_at|date:"M d, Y" }}
+                                        {% if notice.course %}
+                                            for {{ notice.course.name }}
+                                        {% else %}
+                                            (General Notice)
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">No notices available</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Quick Stats Section -->
-<div class="row">
-    <div class="col-md-4">
-        <div class="card bg-primary text-white">
-            <div class="card-body text-center">
-                <i class="fas fa-calendar-check fa-3x mb-3"></i>
-                <h4>Overall Attendance</h4>
-                {% if overall_attendance %}
-                    <h2>{{ overall_attendance|floatformat:1 }}%</h2>
-                {% else %}
-                    <h2>N/A</h2>
-                {% endif %}
+        <!-- Recent Submissions Section -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Recent Submissions</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_submissions %}
+                        <div class="list-group list-group-flush">
+                            {% for submission in recent_submissions %}
+                                <div class="list-group-item">
+                                    <h6 class="mb-1">{{ submission.assignment.title }}</h6>
+                                    <p class="mb-1">
+                                        Submitted: {{ submission.submitted_at|date:"M d, Y" }}
+                                        {% if submission.marks %}
+                                            <br>Marks: {{ submission.marks }}/{{ submission.assignment.max_marks }}
+                                        {% else %}
+                                            <br>Status: Pending grading
+                                        {% endif %}
+                                    </p>
+                                    <small class="text-muted">{{ submission.assignment.course.name }}</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">No recent submissions</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card bg-success text-white">
-            <div class="card-body text-center">
-                <i class="fas fa-tasks fa-3x mb-3"></i>
-                <h4>Assignments</h4>
-                <h2>{{ total_pending_assignments }} Pending</h2>
-            </div>
+
+    <!-- Enrolled Courses Section -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">My Courses</h5>
         </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card bg-info text-white">
-            <div class="card-body text-center">
-                <i class="fas fa-chart-line fa-3x mb-3"></i>
-                <h4>Average Grade</h4>
-                {% if average_grade %}
-                    <h2>{{ average_grade }}</h2>
-                {% else %}
-                    <h2>N/A</h2>
-                {% endif %}
-            </div>
+        <div class="card-body">
+            {% if courses %}
+                <div class="row">
+                    {% for course in courses %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body pb-0">
+                                    <h5 class="card-title">{{ course.name }}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">{{ course.course_code }}</h6>
+                                    <p class="card-text">{{ course.description|truncatewords:20 }}</p>
+                                </div>
+                                <div class="card-footer bg-transparent p-2 border-0">
+                                    <div class="d-flex flex-wrap justify-content-between" style="gap: 4px;">
+                                        <a href="{% url 'attendance:view_course_assignments' course.id %}" 
+                                           class="btn btn-outline-primary btn-sm" 
+                                           style="font-size: 0.75rem; flex: 1 1 auto; min-width: 80px; padding: 0.25rem 0.5rem;">
+                                            <i class="fas fa-tasks fa-sm"></i> Assignments
+                                        </a>
+                                        <a href="{% url 'attendance:view_grades' course.id %}" 
+                                           class="btn btn-outline-success btn-sm" 
+                                           style="font-size: 0.75rem; flex: 1 1 auto; min-width: 80px; padding: 0.25rem 0.5rem;">
+                                            <i class="fas fa-chart-line fa-sm"></i> Grades
+                                        </a>
+                                        <a href="{% url 'attendance:course_resources' course.id %}" 
+                                           class="btn btn-outline-info btn-sm" 
+                                           style="font-size: 0.75rem; flex: 1 1 auto; min-width: 80px; padding: 0.25rem 0.5rem;">
+                                            <i class="fas fa-book fa-sm"></i> Resources
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">You are not enrolled in any courses</p>
+            {% endif %}
         </div>
     </div>
 </div>

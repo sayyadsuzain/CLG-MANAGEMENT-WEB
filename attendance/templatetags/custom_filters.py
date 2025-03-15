@@ -1,4 +1,5 @@
 from django import template
+from django.utils import timezone
 
 register = template.Library()
 
@@ -10,4 +11,8 @@ def get_item(dictionary, key):
     """
     if dictionary is None:
         return None
-    return dictionary.get(key) 
+    return dictionary.get(key)
+
+@register.simple_tag
+def get_current_time():
+    return timezone.now() 

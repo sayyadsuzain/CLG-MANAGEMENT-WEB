@@ -9,7 +9,7 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'attendance:faculty_dashboard' %}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'attendance:mark_attendance' %}">Mark Attendance</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'attendance:mark_attendance_form' %}">Mark Attendance</a></li>
             <li class="breadcrumb-item active" aria-current="page">{{ session.course.name }} - {{ session.date }}</li>
         </ol>
     </nav>
@@ -34,6 +34,7 @@
                                     <tr>
                                         <th>Student ID</th>
                                         <th>Name</th>
+                                        <th class="text-center">Status</th>
                                         <th class="text-center">Present</th>
                                         <th class="text-center">Absent</th>
                                     </tr>
@@ -44,14 +45,25 @@
                                         <td>{{ student.student_id }}</td>
                                         <td>{{ student.user.get_full_name }}</td>
                                         <td class="text-center">
+                                            {% if student.id in attendance_records %}
+                                                {% if attendance_records|get_item:student.id %}
+                                                    <span class="badge bg-success">Present</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Absent</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-warning">Not Marked</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
                                             <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="student_{{ student.id }}" id="present_{{ student.id }}" value="present" {% if attendance_records|get_item:student.id %}checked{% endif %}>
+                                                <input class="form-check-input" type="radio" name="student_{{ student.id }}" id="present_{{ student.id }}" value="1" {% if attendance_records|get_item:student.id %}checked{% endif %}>
                                                 <label class="form-check-label" for="present_{{ student.id }}"></label>
                                             </div>
                                         </td>
                                         <td class="text-center">
                                             <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="student_{{ student.id }}" id="absent_{{ student.id }}" value="absent" {% if student.id in attendance_records and not attendance_records|get_item:student.id %}checked{% endif %}>
+                                                <input class="form-check-input" type="radio" name="student_{{ student.id }}" id="absent_{{ student.id }}" value="0" {% if student.id in attendance_records and not attendance_records|get_item:student.id %}checked{% endif %}>
                                                 <label class="form-check-label" for="absent_{{ student.id }}"></label>
                                             </div>
                                         </td>

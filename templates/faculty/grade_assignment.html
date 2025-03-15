@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Grade Assignment - {{ assignment.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'attendance:faculty_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'attendance:course_assignments' assignment.course.id %}">{{ assignment.course.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Grade Assignment</li>
+        </ol>
+    </nav>
+
+    <!-- Assignment Details -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">{{ assignment.title }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <p><strong>Description:</strong> {{ assignment.description }}</p>
+                    <p><strong>Due Date:</strong> {{ assignment.due_date|date:"F d, Y h:i A" }}</p>
+                    <p><strong>Maximum Marks:</strong> {{ assignment.max_marks }}</p>
+                </div>
+                <div class="col-md-4">
+                    {% if assignment.file %}
+                    <a href="{{ assignment.file.url }}" class="btn btn-primary" target="_blank">
+                        <i class="fas fa-download"></i> Download Assignment
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submissions Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Student Submissions</h5>
+        </div>
+        <div class="card-body">
+            {% if submissions %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Submitted On</th>
+                            <th>Status</th>
+                            <th>File</th>
+                            <th>Grade</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for submission in submissions %}
+                        <tr>
+                            <td>{{ submission.student.user.get_full_name }}</td>
+                            <td>{{ submission.submitted_at|date:"M d, Y h:i A" }}</td>
+                            <td>
+                                {% if submission.marks %}
+                                <span class="badge bg-success">Graded</span>
+                                {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ submission.file.url }}" class="btn btn-sm btn-info" target="_blank">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </td>
+                            <td>
+                                {% if submission.marks %}
+                                <span class="{% if submission.marks >= 6 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ submission.marks }}/{{ assignment.max_marks }}
+                                </span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-primary" 
+                                        onclick="showGradingForm('{{ submission.id }}', '{{ submission.student.user.get_full_name|escapejs }}', '{{ submission.marks|default:'' }}', '{{ submission.remarks|default:''|escapejs }}')">
+                                    {% if submission.marks %}
+                                    <i class="fas fa-edit"></i> Edit Grade
+                                    {% else %}
+                                    <i class="fas fa-check"></i> Grade
+                                    {% endif %}
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">No submissions found for this assignment.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Grading Modal -->
+<div class="modal fade" id="gradingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Grade Submission</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="submission_id" id="submission_id">
+                    <p class="mb-3" id="student_name"></p>
+                    <div class="mb-3">
+                        <label for="marks" class="form-label">Marks (out of {{ assignment.max_marks }})</label>
+                        <input type="number" class="form-control" id="marks" name="marks" min="0" max="{{ assignment.max_marks }}" step="0.5" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="remarks" class="form-label">Remarks</label>
+                        <textarea class="form-control" id="remarks" name="remarks" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Grade</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function showGradingForm(submissionId, studentName, marks, remarks) {
+    document.getElementById('submission_id').value = submissionId;
+    document.getElementById('student_name').textContent = `Student: ${studentName}`;
+    document.getElementById('marks').value = marks;
+    document.getElementById('remarks').value = remarks;
+    
+    new bootstrap.Modal(document.getElementById('gradingModal')).show();
+}
+</script>
+{% endblock %}
+{% endblock %} 

@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Courses - College Management System{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'attendance:faculty_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Manage Courses</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>Manage Courses</h2>
+                <div>
+                    <a href="{% url 'attendance:faculty_dashboard' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                    <a href="{% url 'attendance:add_course' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add New Course
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">My Courses</h5>
+                </div>
+                <div class="card-body">
+                    {% if courses %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Course Code</th>
+                                        <th>Course Name</th>
+                                        <th>Students</th>
+                                        <th>Sessions</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for course in courses %}
+                                        <tr>
+                                            <td>{{ course.course_code }}</td>
+                                            <td>{{ course.name }}</td>
+                                            <td>{{ course.students.count }}</td>
+                                            <td>{{ course.attendancesession_set.count }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{% url 'attendance:course_students' course.id %}" class="btn btn-sm btn-info" title="View Students">
+                                                        <i class="fas fa-users"></i> Students
+                                                    </a>
+                                                    <a href="{% url 'attendance:mark_attendance' course.id %}" class="btn btn-sm btn-success" title="Mark Attendance">
+                                                        <i class="fas fa-check-square"></i> Attendance
+                                                    </a>
+                                                    <a href="{% url 'attendance:create_assignment' course.id %}" class="btn btn-sm btn-warning" title="Create Assignment">
+                                                        <i class="fas fa-tasks"></i> Assignments
+                                                    </a>
+                                                    <a href="{% url 'attendance:upload_resource' course.id %}" class="btn btn-sm btn-primary" title="Upload Resource">
+                                                        <i class="fas fa-upload"></i> Resources
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-danger" title="Delete Course" 
+                                                            onclick="showDeleteModal('{{ course.id }}', '{{ course.name }}')">
+                                                        <i class="fas fa-trash"></i> Delete
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>You don't have any courses yet.
+                            <a href="{% url 'attendance:add_course' %}" class="btn btn-primary btn-sm ms-3">
+                                <i class="fas fa-plus me-1"></i>Add Course
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Course Modal -->
+<div class="modal fade" id="deleteCourseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Course</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the course "<span id="courseNameToDelete"></span>"?</p>
+                <p class="text-danger">This action cannot be undone. All associated data (attendance, assignments, etc.) will be permanently deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteCourseForm" method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Course</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function showDeleteModal(courseId, courseName) {
+    document.getElementById('courseNameToDelete').textContent = courseName;
+    document.getElementById('deleteCourseForm').action = "{% url 'attendance:delete_course' 0 %}".replace('0', courseId);
+    new bootstrap.Modal(document.getElementById('deleteCourseModal')).show();
+}
+</script>
+{% endblock %}
+{% endblock %} 

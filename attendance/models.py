@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 # import qrcode
 # from io import BytesIO
@@ -9,88 +10,68 @@ from django.utils import timezone
 import uuid
 import os
 
+def validate_image_file(value):
+    ext = os.path.splitext(value.name)[1]
+    valid_extensions = ['.jpg', '.jpeg', '.png', '.gif']
+    if not ext.lower() in valid_extensions:
+        raise ValidationError('Unsupported file extension. Please use: jpg, jpeg, png, or gif')
+    if value.size > 5*1024*1024:  # 5MB limit
+        raise ValidationError('File size too large. Size should not exceed 5MB.')
+
 class User(AbstractUser):
-    USER_TYPE_CHOICES = (
+    USER_TYPES = (
         ('student', 'Student'),
         ('faculty', 'Faculty'),
-        ('admin', 'Administrator'),
+        ('admin', 'Admin'),
     )
     email = models.EmailField(unique=True)
-    user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES)
+    user_type = models.CharField(max_length=10, choices=USER_TYPES)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
-    profile_picture = models.FileField(upload_to='profile_pics/', blank=True, null=True)
+    profile_picture = models.FileField(
+        upload_to='profile_pics/',
+        blank=True,
+        null=True,
+        validators=[validate_image_file]
+    )
+    password_reset_token = models.CharField(max_length=100, null=True, blank=True)
+    password_reset_token_created = models.DateTimeField(null=True, blank=True)
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
     
     def __str__(self):
-        return f"{self.get_full_name()} ({self.email})"
+        return self.email
+    
+    def get_user_type_display(self):
+        return dict(self.USER_TYPES).get(self.user_type, '')
 
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     student_id = models.CharField(max_length=20, unique=True)
     department = models.CharField(max_length=100)
-    semester = models.PositiveSmallIntegerField(default=1)
-    roll_number = models.CharField(max_length=20, blank=True, null=True)
-    qr_code = models.FileField(upload_to='student_qrcodes/', blank=True, null=True)
-    
+    semester = models.IntegerField(default=1)
+    qr_code = models.FileField(upload_to='qr_codes/', blank=True, null=True)
+    roll_number = models.CharField(max_length=20, blank=True, default='')
+
     def __str__(self):
-        return f"{self.user.get_full_name()} ({self.student_id})"
-    
-    def save(self, *args, **kwargs):
-        # QR code generation disabled temporarily
-        # if not self.qr_code:
-        #     qr = qrcode.QRCode(
-        #         version=1,
-        #         error_correction=qrcode.constants.ERROR_CORRECT_L,
-        #         box_size=10,
-        #         border=4,
-        #     )
-        #     qr.add_data(self.student_id)
-        #     qr.make(fit=True)
-        #     
-        #     img = qr.make_image(fill_color="black", back_color="white")
-        #     buffer = BytesIO()
-        #     img.save(buffer, format="PNG")
-        #     
-        #     filename = f'student_qr_{self.student_id}.png'
-        #     self.qr_code.save(filename, File(buffer), save=False)
-        
-        super().save(*args, **kwargs)
-    
-    def get_attendance_percentage(self, course=None):
-        """Calculate attendance percentage for a specific course or overall"""
-        if course:
-            total_sessions = AttendanceSession.objects.filter(course=course).count()
-            present_sessions = AttendanceRecord.objects.filter(
-                session__course=course,
-                student=self,
-                status=True
-            ).count()
-        else:
-            # Calculate for all courses
-            courses = Course.objects.filter(students=self)
-            total_sessions = AttendanceSession.objects.filter(course__in=courses).count()
-            present_sessions = AttendanceRecord.objects.filter(
-                student=self,
-                status=True
-            ).count()
-        
-        if total_sessions > 0:
-            return (present_sessions / total_sessions) * 100
-        return 0
-    
-    def is_attendance_below_threshold(self, course=None, threshold=75):
-        """Check if attendance is below the specified threshold"""
-        percentage = self.get_attendance_percentage(course)
-        return percentage < threshold
+        return f"{self.student_id} - {self.user.get_full_name()}"
+
+    def get_attendance_percentage(self):
+        total_sessions = AttendanceSession.objects.filter(course__in=self.courses.all()).count()
+        if total_sessions == 0:
+            return 0
+        present_sessions = AttendanceRecord.objects.filter(
+            student=self,
+            status=True
+        ).count()
+        return (present_sessions / total_sessions) * 100
 
 class Faculty(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     faculty_id = models.CharField(max_length=20, unique=True)
     department = models.CharField(max_length=100)
-    designation = models.CharField(max_length=100, blank=True, null=True)
-    specialization = models.CharField(max_length=200, blank=True, null=True)
+    designation = models.CharField(max_length=100, default='Assistant Professor')
+    joining_date = models.DateField(default=timezone.now)
 
     def __str__(self):
         return f"{self.user.get_full_name()} ({self.faculty_id})"
@@ -120,19 +101,13 @@ class AttendancePolicy(models.Model):
         return f"{self.name} (Min: {self.min_attendance_percentage}%)"
 
 class Course(models.Model):
-    course_code = models.CharField(max_length=20, unique=True)
-    name = models.CharField(max_length=200)
-    faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE)
-    students = models.ManyToManyField(Student)
+    course_code = models.CharField(max_length=10, unique=True)
+    name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
-    attendance_policy = models.ForeignKey(
-        AttendancePolicy, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True
-    )
-    credits = models.PositiveSmallIntegerField(default=3)
+    faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE)
+    students = models.ManyToManyField('Student', related_name='courses', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.course_code} - {self.name}"
@@ -159,7 +134,7 @@ class Course(models.Model):
             threshold = self.attendance_policy.min_attendance_percentage
         
         for student in self.students.all():
-            percentage = student.get_attendance_percentage(self)
+            percentage = student.get_attendance_percentage()
             attendance_sum += percentage
             
             if percentage < threshold:
@@ -263,77 +238,63 @@ class AttendanceSession(models.Model):
 class AttendanceRecord(models.Model):
     session = models.ForeignKey(AttendanceSession, on_delete=models.CASCADE)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    status = models.BooleanField(default=False)
-    marked_by = models.ForeignKey(Faculty, on_delete=models.CASCADE, null=True, blank=True)
+    status = models.BooleanField(default=False)  # True for present, False for absent
+    marked_by = models.ForeignKey(Faculty, on_delete=models.SET_NULL, null=True)
     marked_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    marking_method = models.CharField(
-        max_length=20,
-        choices=[
-            ('manual', 'Marked Manually'),
-            ('qr', 'QR Code Scan'),
-            ('rfid', 'RFID Scan'),
-            ('face', 'Face Recognition'),
-            ('auto', 'Automatic')
-        ],
-        default='manual'
-    )
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
-    device_info = models.CharField(max_length=255, null=True, blank=True)
-    location_data = models.JSONField(null=True, blank=True)
-    remarks = models.TextField(blank=True, null=True)
-
-    class Meta:
-        unique_together = ['session', 'student']
-
-    def __str__(self):
-        status_str = "Present" if self.status else "Absent"
-        return f"{self.student.user.get_full_name()} - {self.session.date} - {status_str}"
     
     def save(self, *args, **kwargs):
-        is_new = self.pk is None
+        # Get the course from the session
+        course = self.session.course
+        
+        # Save the record first
         super().save(*args, **kwargs)
         
-        if is_new:
-            # Check if attendance is below threshold and send notification if needed
-            course = self.session.course
-            if course.attendance_policy and course.attendance_policy.auto_notify_student:
-                attendance_percentage = self.student.get_attendance_percentage(course)
-                threshold = course.attendance_policy.warning_threshold
-                
-                if attendance_percentage < threshold:
-                    # Create notification for student
-                    Notification.objects.create(
-                        user=self.student.user,
-                        title="Low Attendance Warning",
-                        message=f"Your attendance in {course.name} is {attendance_percentage:.2f}%, which is below the required threshold of {threshold}%.",
-                        notification_type='attendance',
-                        related_id=self.id
-                    )
+        # Send notification if student is absent
+        if not self.status:  # If student is absent
+            try:
+                # Create notification for student
+                Notification.objects.create(
+                    user=self.student.user,
+                    title=f'Absence Notification - {course.name}',
+                    message=f'You were marked absent for {course.name} on {self.session.date}',
+                    notification_type='attendance'
+                )
+            except Exception as e:
+                # Log the error but don't prevent saving
+                print(f"Error creating notification: {str(e)}")
+    
+    class Meta:
+        unique_together = ('session', 'student')
+        
+    def __str__(self):
+        return f"{self.student} - {self.session} - {'Present' if self.status else 'Absent'}"
 
 class Assignment(models.Model):
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='assignments')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     description = models.TextField()
-    due_date = models.DateField()
+    file = models.FileField(upload_to='assignments/', null=True, blank=True)
+    due_date = models.DateTimeField()
     max_marks = models.PositiveIntegerField()
+    created_by = models.ForeignKey(Faculty, on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         return f"{self.course.course_code} - {self.title}"
     
     @property
     def is_past_due(self):
-        return timezone.now().date() > self.due_date
+        return timezone.now().date() > self.due_date.date()
 
 class AssignmentSubmission(models.Model):
-    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='submissions')
+    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    submission_file = models.FileField(upload_to='assignments/')
+    file = models.FileField(upload_to='submissions/', null=True, blank=True)
     submitted_at = models.DateTimeField(auto_now_add=True)
-    remarks = models.TextField(blank=True, null=True)
-    grade = models.PositiveIntegerField(null=True, blank=True, validators=[MaxValueValidator(100)])
+    marks = models.PositiveIntegerField(null=True, blank=True)
+    feedback = models.TextField(blank=True, null=True)
+    graded_by = models.ForeignKey(Faculty, on_delete=models.CASCADE, null=True, blank=True)
+    graded_at = models.DateTimeField(null=True, blank=True)
     
     class Meta:
         unique_together = ['assignment', 'student']
@@ -343,7 +304,7 @@ class AssignmentSubmission(models.Model):
     
     @property
     def is_late(self):
-        return self.submitted_at.date() > self.assignment.due_date
+        return self.submitted_at.date() > self.assignment.due_date.date()
 
 class Grade(models.Model):
     GRADE_CHOICES = (
@@ -378,12 +339,11 @@ class Notice(models.Model):
         ('high', 'High'),
     )
     
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True)
     title = models.CharField(max_length=200)
     content = models.TextField()
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(Faculty, on_delete=models.SET_NULL, null=True, blank=True)
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
-    publish_date = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -392,13 +352,24 @@ class Notice(models.Model):
     
     @property
     def is_recent(self):
-        return (timezone.now() - self.publish_date).days <= 7
+        return (timezone.now() - self.created_at).days <= 7
+
+def validate_pdf_file(value):
+    if not value:
+        return
+    ext = os.path.splitext(value.name)[1]
+    if ext.lower() != '.pdf':
+        raise ValidationError('Only PDF files are allowed.')
 
 class Resource(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    file = models.FileField(upload_to='resources/')
+    file = models.FileField(
+        upload_to='resources/',
+        validators=[validate_pdf_file, FileExtensionValidator(['pdf'])],
+        help_text="Only PDF files are allowed"
+    )
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     
@@ -407,6 +378,42 @@ class Resource(models.Model):
     
     class Meta:
         ordering = ['-uploaded_at']
+    
+    @property
+    def filename(self):
+        return os.path.basename(self.file.name) if self.file else None
+    
+    def get_download_url(self):
+        if self.file:
+            try:
+                return self.file.url
+            except Exception:
+                return None
+        return None
+    
+    def clean(self):
+        if self.file:
+            if not self.file.name.lower().endswith('.pdf'):
+                raise ValidationError('Only PDF files are allowed.')
+            # Only check if file exists if it's already been saved
+            if self.pk and not os.path.exists(self.file.path):
+                raise ValidationError('File does not exist.')
+        super().clean()
+    
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+        
+    def delete(self, *args, **kwargs):
+        # Delete the file when the model instance is deleted
+        if self.file:
+            try:
+                storage = self.file.storage
+                if storage.exists(self.file.name):
+                    storage.delete(self.file.name)
+            except Exception:
+                pass
+        super().delete(*args, **kwargs)
 
 class Notification(models.Model):
     NOTIFICATION_TYPES = [
@@ -454,3 +461,13 @@ class AttendanceReport(models.Model):
     
     def __str__(self):
         return f"{self.title} - {self.report_type} ({self.start_date} to {self.end_date})"
+
+class Message(models.Model):
+    sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
+    receiver = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE)
+    content = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-sent_at']

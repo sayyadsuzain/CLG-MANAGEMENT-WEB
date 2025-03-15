@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Courses{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">My Courses</h2>
+        <a href="{% url 'attendance:student_dashboard' %}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <div class="row g-4">
+        {% if courses %}
+            {% for course in courses %}
+                <div class="col-md-6 mb-3">
+                    <div class="card border-0 shadow-sm">
+                        <!-- Course Code Header -->
+                        <div class="card-header bg-primary text-white py-2 px-3">
+                            {{ course.course_code }}
+                        </div>
+                        
+                        <!-- Course Details -->
+                        <div class="card-body px-3 py-2">
+                            <h5 class="mb-2">{{ course.name }}</h5>
+                            <p class="text-muted mb-2">{{ course.description|truncatewords:10 }}</p>
+                            <p class="mb-2"><strong>Faculty:</strong> {{ course.faculty.user.get_full_name }}</p>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="px-3 pb-3">
+                            <div class="d-flex" style="gap: 8px;">
+                                <a href="{% url 'attendance:view_course_assignments' course.id %}" 
+                                   class="btn btn-outline-primary px-2 py-1 flex-1 text-decoration-none"
+                                   style="font-size: 14px;">
+                                   <i class="fas fa-tasks fa-sm"></i>
+                                   <span class="ms-1">Assignments</span>
+                                </a>
+                                <a href="{% url 'attendance:view_attendance' %}?course={{ course.id }}" 
+                                   class="btn btn-outline-info px-2 py-1 flex-1 text-decoration-none"
+                                   style="font-size: 14px;">
+                                   <i class="fas fa-calendar-check fa-sm"></i>
+                                   <span class="ms-1">Attendance</span>
+                                </a>
+                                <a href="{% url 'attendance:view_grades' course.id %}" 
+                                   class="btn btn-outline-success px-2 py-1 flex-1 text-decoration-none"
+                                   style="font-size: 14px;">
+                                   <i class="fas fa-chart-line fa-sm"></i>
+                                   <span class="ms-1">Grades</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    You are not enrolled in any courses yet.
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .btn.flex-1 {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+    }
+    
+    .card {
+        background: #fff;
+    }
+</style>
+{% endblock %} 

@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load attendance_extras %}
+
+{% block title %}All Students - Faculty Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Breadcrumb and Title -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'attendance:faculty_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">All Students</li>
+                </ol>
+            </nav>
+            <h2>All Students</h2>
+        </div>
+        <a href="{% url 'attendance:faculty_dashboard' %}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Statistics Summary -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Students</h5>
+                    <h2 class="mb-0">{{ students|length }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students Table -->
+    <div class="card">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="fas fa-users text-primary me-2"></i>Students List
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Department</th>
+                            <th>Courses</th>
+                            <th>Attendance</th>
+                            <th>Pending Tasks</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ student.student_id }}</td>
+                            <td>{{ student.user.get_full_name }}</td>
+                            <td>{{ student.user.email }}</td>
+                            <td>{{ student.department }}</td>
+                            <td>
+                                {% for course in student_stats|get_item:student.id|get_item:'courses' %}
+                                    <span class="badge bg-primary">{{ course.course_code }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                        <div class="progress-bar {% if student_stats|get_item:student.id|get_item:'attendance' >= 75 %}bg-success{% else %}bg-danger{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ student_stats|get_item:student.id|get_item:'attendance' }}%">
+                                        </div>
+                                    </div>
+                                    <span class="text-muted small">{{ student_stats|get_item:student.id|get_item:'attendance' }}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                {% with pending=student_stats|get_item:student.id|get_item:'pending_assignments' %}
+                                    {% if pending > 0 %}
+                                        <span class="badge bg-warning">{{ pending }} pending</span>
+                                    {% else %}
+                                        <span class="badge bg-success">All done</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'attendance:student_details' student.id %}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'attendance:student_attendance' student.id %}" class="btn btn-sm btn-outline-info" title="View Attendance">
+                                        <i class="fas fa-calendar-check"></i>
+                                    </a>
+                                    <a href="{% url 'attendance:student_grades' student.id %}" class="btn btn-sm btn-outline-success" title="View Grades">
+                                        <i class="fas fa-graduation-cap"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-info-circle me-2"></i>No students found
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
