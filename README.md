@@ -1,43 +1,40 @@
-# College Management System
+# College Management System (CMS)
 
-A comprehensive web-based system for managing college operations including attendance tracking, course management, grade management, and communication between faculty and students.
+A comprehensive web-based College Management System built with Django and Daphne, featuring SSL support and real-time capabilities.
 
 ## Features
 
-- **User Authentication**: Secure login for students, faculty, and administrators
-- **Course Management**: Create, update, and manage courses
-- **Attendance Tracking**: Mark and track student attendance with detailed reports
-- **Grade Management**: Record and manage student grades
-- **Notice Board**: Share important announcements with students
-- **Resource Sharing**: Upload and share course materials
-- **Notifications**: Automated notifications for important events
-- **Secure Communication**: SSL/TLS support for secure data transmission
-- **Excel Export**: Support for exporting data to Excel format
+- **Secure Authentication**: SSL-enabled secure login system
+- **Faculty Management**: Course assignments, grading, and resource management
+- **Student Portal**: Course enrollment, assignment submission, and grade viewing
+- **Real-time Updates**: WebSocket-based notifications and updates
+- **Resource Management**: Upload and manage course materials
+- **Attendance Tracking**: Digital attendance management system
+- **Excel Integration**: Export data to Excel format for reporting
 
-## Technology Stack
+## Prerequisites
 
-- **Backend**: Django 5.0.2
-- **Frontend**: HTML, CSS, JavaScript, Bootstrap
-- **Database**: SQLite (default), can be configured for PostgreSQL or MySQL
-- **Authentication**: Django's built-in authentication system
-- **WebSocket Support**: Channels and Daphne for real-time features
-- **SSL/TLS**: Built-in SSL support for secure communication
+- Python 3.12+
+- WSL (Windows Subsystem for Linux) or Linux
+- Virtual Environment
+- SSL Certificate and Private Key
 
 ## Installation
 
 1. Clone the repository:
 
    ```
-   git clone https://github.com/yourusername/college-management-system.git
-   cd college-management-system
+   git clone https://github.com/sayyadsuzain/CLG-MANAGEMENT-WEB.git
+   cd CLG-MANAGEMENT-WEB
    ```
 
-2. Create and activate a virtual environment:
+2. Create and activate virtual environment:
 
    ```
    python -m venv venv
-   venv\Scripts\activate  # On Windows
-   source venv/bin/activate  # On macOS/Linux
+   source venv/bin/activate  # Linux/WSL
+   # OR
+   .\venv\Scripts\activate  # Windows
    ```
 
 3. Install dependencies:
@@ -46,103 +43,79 @@ A comprehensive web-based system for managing college operations including atten
    pip install -r requirements.txt
    ```
 
-4. Apply migrations:
+4. Configure SSL:
+
+   ```
+   mkdir ssl
+   # Place your SSL certificates in the ssl directory:
+   # - ssl/private.key
+   # - ssl/certificate.crt
+   ```
+
+5. Set up the database:
 
    ```
    python manage.py migrate
-   ```
-
-5. Create a superuser:
-
-   ```
    python manage.py createsuperuser
    ```
 
-6. Configure SSL (Required for HTTPS):
-   
-   ```
-   # Generate self-signed certificates (for development)
-   mkdir ssl
-   openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ssl/private.key -out ssl/certificate.crt
-   
-   # Set proper permissions
-   chmod 600 ssl/private.key
-   chmod 644 ssl/certificate.crt
-   ```
+## Running the Server
 
-7. Run the production server with SSL:
+### Using the Simplified Scripts
+
+1. Windows Command Prompt:
 
    ```
-   daphne -e ssl:8443:privateKey=ssl/private.key:certKey=ssl/certificate.crt college_management.asgi:application
+   deployment\run_daphne.bat
    ```
 
-8. Access the application at https://localhost:8443/
+2. WSL/Linux:
 
-## Configuration
+   ```
+   bash deployment/run_daphne.sh
+   ```
 
-### SSL Configuration
-- Place your SSL certificates in the `ssl` directory
-- For production, use properly signed certificates from a trusted CA
-- Update certificate paths in the Daphne command if needed
+The server will start at `https://localhost:8443`
 
-### Environment Variables
-- `DEBUG`: Set to False in production
-- `ALLOWED_HOSTS`: Configure allowed hostnames
-- `SECRET_KEY`: Set a secure secret key
+## Project Structure
 
-## Usage
+```
+college_management/
+├── attendance/           # Main application module
+│   ├── migrations/      # Database migrations
+│   ├── templates/       # HTML templates
+│   ├── static/         # Static files (CSS, JS)
+│   ├── models.py       # Database models
+│   ├── views.py        # View controllers
+│   └── urls.py         # URL routing
+├── college_management/  # Project settings
+│   ├── settings.py     # Main settings file
+│   ├── urls.py         # Main URL routing
+│   └── asgi.py         # ASGI configuration
+├── deployment/         # Deployment scripts
+│   ├── run_daphne.bat  # Windows startup script
+│   └── run_daphne.sh   # Linux startup script
+├── ssl/               # SSL certificates
+├── static/            # Global static files
+├── templates/         # Global templates
+├── manage.py          # Django management script
+└── requirements.txt   # Project dependencies
+```
 
-### For Administrators
+## Security Notes
 
-- Create faculty and student accounts
-- Manage courses and departments
-- Generate reports
-- Monitor system logs
-
-### For Faculty
-
-- Create and manage courses
-- Mark attendance
-- Upload course materials
-- Create assignments and grade students
-- Post notices
-- Export attendance and grades to Excel
-
-### For Students
-
-- View enrolled courses
-- Check attendance status
-- Submit assignments
-- View grades
-- Access course materials
-- Receive real-time notifications
-
-## Security Features
-
-- CSRF protection enabled
-- SSL/TLS encryption
-- Secure password hashing
-- Session management
-- Permission-based access control
-
-## Troubleshooting
-
-1. SSL Certificate Issues:
-   - Accept self-signed certificates in development
-   - Ensure proper certificate permissions
-   - Check certificate paths in Daphne command
-
-2. Port Already in Use:
-   - Kill existing processes: `pkill -f daphne`
-   - Choose a different port if needed
-
-3. Permission Issues:
-   - Check file permissions for SSL certificates
-   - Ensure proper ownership of project files
+- Keep SSL certificates secure and set proper permissions
+- Never commit sensitive data or credentials
+- Regularly update dependencies
+- Use environment variables for sensitive settings
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a new Pull Request
 
 ## License
 
